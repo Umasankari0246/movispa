@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import AppointmentsView from './frontend/AppointmentsPage.jsx'
 
 const NAV_ITEMS = [
   {
@@ -783,81 +784,6 @@ function TherapistsView() {
           <p className="muted">Take our 2-minute matching quiz.</p>
         </div>
         <button type="button" className="pill">Start quiz</button>
-      </div>
-    </div>
-  )
-}
-
-function AppointmentsView() {
-  return (
-    <div className="view-body">
-      <div className="appointments-grid">
-        <div className="appointments-main">
-          <article className="feature-card wide">
-            <span className="tag">Confirmed</span>
-            <div className="feature-content">
-              <div>
-                <h3>Deep Tissue Release with Aromatherapy</h3>
-                <p className="muted">Starting in 45 minutes</p>
-                <div className="pill-row">
-                  <button type="button" className="pill">Get directions</button>
-                  <button type="button" className="pill ghost">Details</button>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <div className="appointment-list">
-            {[
-              { date: 'Oct 24, 14:00', title: 'Hot Stone Therapy Session', status: 'Rescheduled' },
-              { date: 'Oct 29, 11:30', title: 'Hydra-Radiance', status: 'Confirmed' },
-            ].map((item) => (
-              <div key={item.title} className="appointment-item">
-                <div className="avatar"></div>
-                <div>
-                  <p className="appointment-date">{item.date}</p>
-                  <h5>{item.title}</h5>
-                  <span className="muted">With Specialist Elena Vance</span>
-                </div>
-                <div className="appointment-actions">
-                  <span className={`status-badge ${item.status.toLowerCase()}`}>
-                    {item.status}
-                  </span>
-                  <button type="button" className="pill ghost">Details</button>
-                  <button type="button" className="pill">Reschedule</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <aside className="appointments-side">
-          <div className="tip-card">
-            <h5>Pre-session hydration</h5>
-            <p className="muted">
-              Warm lemon water 2 hours before your massage helps flush toxins.
-            </p>
-          </div>
-          <div className="stats-card">
-            <p className="muted">Your sanctuary stats</p>
-            <div className="stat-row">
-              <span>Total sessions</span>
-              <strong>12</strong>
-            </div>
-            <div className="stat-row">
-              <span>Zen points</span>
-              <strong>2,450</strong>
-            </div>
-          </div>
-          <div className="prep-card">
-            <p className="muted">Preparation</p>
-            <ul>
-              <li>Arrival 15m prior</li>
-              <li>Digital check-in complete</li>
-              <li>Review medical form</li>
-            </ul>
-          </div>
-        </aside>
       </div>
     </div>
   )
