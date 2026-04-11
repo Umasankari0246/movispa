@@ -78,3 +78,4 @@ Navigate to `http://localhost:5173` (or the URL shown in terminal)
 - Payment processing integration
 - Terms & Conditions with mandatory acceptance
 - Success confirmation with transaction IDs
+updated by Sandhya
