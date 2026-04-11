@@ -78,8 +78,8 @@ const rooms = [
   { value: 'Room 101', label: 'Room 101 - Massage Suite' },
   { value: 'Room 102', label: 'Room 102 - Facial Room' },
   { value: 'Room 103', label: 'Room 103 - Wellness Suite' },
-  { value: 'Room 104', label: 'Room 104 - Private Therapy' },
-  { value: 'Room 105', label: 'Room 105 - Couples Room' },
+  { value: 'Room 104', label: 'Room 104 - Meditate Therapy' },
+  { value: 'Room 105', label: 'Room 105 - Asana Room' },
 ]
 
 const initialFormState = {
@@ -143,6 +143,7 @@ function AppointmentsView() {
   const [transactionId, setTransactionId] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [isSuccessOpen, setIsSuccessOpen] = useState(false)
+  const [isPaymentSuccessOpen, setIsPaymentSuccessOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [appointments, setAppointments] = useState([
     {
@@ -213,8 +214,13 @@ function AppointmentsView() {
       setTransactionId(txnId)
       setCustomerName(form.fullName)
       setPaymentSuccess(true)
-      // Proceed to step 5 instead of closing modal
-      setStep(5)
+      // Show payment success popup
+      setIsPaymentSuccessOpen(true)
+      // Proceed to step 5 after a delay
+      setTimeout(() => {
+        setIsPaymentSuccessOpen(false)
+        setStep(5)
+      }, 2000)
     }
   }
 
@@ -264,9 +270,18 @@ function AppointmentsView() {
 
   return (
     <div className="view-body appointments-view">
-      <div className="mb-6">
-        <h3 className="text-[28px] font-semibold">Appointments</h3>
-        <p className="text-sm text-muted">Manage admissions, bookings and therapist assignments.</p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h3 className="text-[28px] font-semibold">Appointments</h3>
+          <p className="text-sm text-muted">Manage admissions, bookings and therapist assignments.</p>
+        </div>
+        <button
+          type="button"
+          className="rounded-full bg-primary px-6 py-3 text-[13px] font-semibold uppercase tracking-[1px] text-white shadow-soft transition hover:brightness-110"
+          onClick={openModal}
+        >
+          + New Appointment
+        </button>
       </div>
 
       {/* KPI Summary Cards */}
@@ -329,17 +344,7 @@ function AppointmentsView() {
         </div>
       </div>
 
-      {/* New Appointment Button */}
-      <div className="mb-6">
-        <button
-          type="button"
-          className="rounded-full bg-primary px-6 py-3 text-[13px] font-semibold uppercase tracking-[1px] text-white shadow-soft transition hover:brightness-110"
-          onClick={openModal}
-        >
-          + New Appointment
-        </button>
-      </div>
-
+      
       {/* Appointment Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200">
@@ -882,6 +887,14 @@ function AppointmentsView() {
                       </button>
                     )}
                     <button
+                      type="button"
+                      className="h-12 rounded-full border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                      onClick={handleStepNext}
+                      disabled={!stepCompletion[step]}
+                    >
+                      Next
+                    </button>
+                    <button
                       type="submit"
                       className="h-12 rounded-full bg-primary px-6 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-slate-300"
                       disabled={step === 5 ? !stepCompletion[5] : !stepCompletion[step]}
@@ -896,24 +909,42 @@ function AppointmentsView() {
         </div>
       )}
 
-      {isSuccessOpen && (
+      {isPaymentSuccessOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-[28px] bg-white p-6 text-center shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
             <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
               ?
             </div>
-            <h3 className="text-2xl font-semibold">Successfully Updated!</h3>
+            <h3 className="text-xl font-semibold text-emerald-700">Successfully Paid!</h3>
             <div className="mt-4 space-y-2">
-              <p className="text-lg font-medium text-emerald-700">Thank you, {customerName}!</p>
-              <p className="text-sm text-slate-600">Your appointment has been confirmed</p>
+              <p className="text-lg font-medium text-slate-800">Thank you, {customerName}!</p>
+              <div className="space-y-1">
+                <p className="text-sm text-slate-600">Service: <span className="font-semibold">{form.selectedService}</span></p>
+                <p className="text-sm text-slate-600">Transaction ID: <span className="font-mono font-semibold">{transactionId}</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSuccessOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="w-full max-w-md mx-4 rounded-[28px] bg-white p-6 text-center shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
+            <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              ?
+            </div>
+            <h3 className="text-xl md:text-2xl font-semibold text-emerald-700">Appointment booked successfully!</h3>
+            <div className="mt-4 space-y-2">
+              <p className="text-base md:text-lg font-medium text-emerald-700">Thank you, {customerName}!</p>
+              <p className="text-sm md:text-base text-slate-600">Your appointment has been confirmed</p>
               <div className="mt-3 rounded-lg bg-slate-50 p-3">
                 <p className="text-xs text-slate-500">Transaction ID</p>
-                <p className="text-sm font-mono font-semibold text-slate-800">{transactionId}</p>
+                <p className="text-sm md:text-base font-mono font-semibold text-slate-800">{transactionId}</p>
               </div>
             </div>
             <button
               type="button"
-              className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-white hover:brightness-110 transition"
+              className="mt-6 w-full inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-white hover:brightness-110 transition"
               onClick={() => setIsSuccessOpen(false)}
             >
               Close
