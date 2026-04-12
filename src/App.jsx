@@ -2,65 +2,34 @@ import { useState } from 'react'
 import './App.css'
 import AppointmentsView from './frontend/AppointmentsPage.jsx'
 import TherapistManagement from './frontend/TherapistManagement.jsx'
+import MaterialSymbol from './components/MaterialSymbol.jsx'
+import heroImage from './assets/hero.png'
 
 const NAV_ITEMS = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    icon: (
-      <svg viewBox="0 0 24 24" role="presentation">
-        <rect x="3" y="3" width="7" height="7" rx="2" fill="none" />
-        <rect x="14" y="3" width="7" height="7" rx="2" fill="none" />
-        <rect x="3" y="14" width="7" height="7" rx="2" fill="none" />
-        <rect x="14" y="14" width="7" height="7" rx="2" fill="none" />
-      </svg>
-    ),
+    icon: 'dashboard',
   },
   {
     id: 'services',
     label: 'Services',
-    icon: (
-      <svg viewBox="0 0 24 24" role="presentation">
-        <path
-          d="M12 4c-2 3-3 5-3 8a3 3 0 0 0 6 0c0-3-1-5-3-8z"
-          fill="none"
-        />
-        <path d="M6 13c0 4 3 7 6 7s6-3 6-7" fill="none" />
-      </svg>
-    ),
+    icon: 'spa',
   },
   {
     id: 'therapists',
     label: 'Therapists',
-    icon: (
-      <svg viewBox="0 0 24 24" role="presentation">
-        <circle cx="12" cy="8" r="4" fill="none" />
-        <path d="M4 21c0-4 4-7 8-7s8 3 8 7" fill="none" />
-      </svg>
-    ),
+    icon: 'person',
   },
   {
     id: 'appointments',
     label: 'Appointments',
-    icon: (
-      <svg viewBox="0 0 24 24" role="presentation">
-        <rect x="3" y="5" width="18" height="16" rx="3" fill="none" />
-        <path d="M7 3v4M17 3v4M3 10h18" fill="none" />
-      </svg>
-    ),
+    icon: 'calendar_month',
   },
   {
     id: 'offers',
     label: 'Offers',
-    icon: (
-      <svg viewBox="0 0 24 24" role="presentation">
-        <path
-          d="M3 10l7-7h7l4 4v7l-7 7-11-11z"
-          fill="none"
-        />
-        <circle cx="16" cy="8" r="1.5" fill="none" />
-      </svg>
-    ),
+    icon: 'sell',
   },
 ]
 
@@ -113,36 +82,8 @@ function LoginScreen({ onSignIn }) {
           </div>
 
           <header className="relative z-10 flex items-center gap-3">
-            <span className="h-9 w-9 rounded-xl bg-white/15 text-gold flex items-center justify-center backdrop-blur">
-              <svg viewBox="0 0 64 64" role="presentation" className="h-5 w-5">
-                <defs>
-                  <linearGradient id="leafGradient" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#f6d5a7" />
-                    <stop offset="1" stopColor="#c8a97e" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M32 8c9 6 14 16 13 26-1 10-8 18-18 20-9 2-19-3-22-11 6-10 15-20 27-35z"
-                  fill="url(#leafGradient)"
-                />
-                <path
-                  d="M16 20c-7 3-11 9-11 15 0 6 4 11 10 12 4-8 6-17 1-27z"
-                  fill="url(#leafGradient)"
-                  opacity="0.95"
-                />
-                <path
-                  d="M47 20c7 3 11 9 11 15 0 6-4 11-10 12-4-8-6-17-1-27z"
-                  fill="url(#leafGradient)"
-                  opacity="0.95"
-                />
-                <path
-                  d="M32 18v30"
-                  fill="none"
-                  stroke="url(#leafGradient)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+            <span className="icon-crest icon-crest--brand icon-crest--compact h-9 w-9 rounded-xl bg-white/15 text-gold flex items-center justify-center backdrop-blur">
+              <MaterialSymbol name="spa" className="text-[20px]" filled />
             </span>
             <div>
               <p className="font-heading text-lg tracking-[0.6px]">Movi Cloud Spa</p>
@@ -168,55 +109,19 @@ function LoginScreen({ onSignIn }) {
               {
                 title: '99.9% reliable',
                 subtitle: 'Uptime guaranteed',
-                icon: (
-                  <svg viewBox="0 0 24 24" role="presentation" className="h-4 w-4">
-                    <path
-                      d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
-                    <path
-                      d="M9 12l2 2 4-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ),
+                icon: <MaterialSymbol name="verified_user" className="text-[16px]" />,
               },
               {
                 title: '24/7 concierge',
                 subtitle: 'Priority tech support',
-                icon: (
-                  <svg viewBox="0 0 24 24" role="presentation" className="h-4 w-4">
-                    <path
-                      d="M4 12a8 8 0 0 1 16 0v4a2 2 0 0 1-2 2h-2"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                    />
-                    <rect x="3" y="11" width="4" height="6" rx="2" />
-                    <rect x="17" y="11" width="4" height="6" rx="2" />
-                    <path
-                      d="M12 16v2"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                ),
+                icon: <MaterialSymbol name="support_agent" className="text-[16px]" />,
               },
             ].map((item) => (
               <div
                 key={item.title}
                 className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"
               >
-                <span className="h-7 w-7 rounded-full bg-[radial-gradient(circle,_#f0d7b0,_#c8a97e)] text-[#1f4d3e] shadow-[0_0_0_6px_rgba(200,169,126,0.18)] flex items-center justify-center">
+                <span className="icon-crest icon-crest--metric icon-crest--compact h-7 w-7 rounded-full bg-[radial-gradient(circle,_#f0d7b0,_#c8a97e)] text-[#1f4d3e] shadow-[0_0_0_6px_rgba(200,169,126,0.18)] flex items-center justify-center">
                   {item.icon}
                 </span>
                 <div>
@@ -271,15 +176,7 @@ function LoginScreen({ onSignIn }) {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted"
                     aria-label="Show"
                   >
-                    <svg viewBox="0 0 24 24" role="presentation" className="h-5 w-5">
-                      <path
-                        d="M12 5c5.2 0 9.3 4.3 10.6 6-1.3 1.7-5.4 6-10.6 6S2.7 12.7 1.4 11C2.7 9.3 6.8 5 12 5z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                      <circle cx="12" cy="11" r="3" fill="currentColor" />
-                    </svg>
+                    <MaterialSymbol name="visibility" className="text-[20px]" />
                   </button>
                 </div>
               </label>
@@ -324,55 +221,13 @@ function LoginScreen({ onSignIn }) {
               </p>
               <div className="mt-3 flex justify-center gap-3">
                 {[
-                  (
-                    <svg viewBox="0 0 24 24" role="presentation" className="h-3 w-3">
-                      <rect x="6" y="10" width="12" height="9" rx="2" />
-                      <path
-                        d="M9 10V7a3 3 0 0 1 6 0v3"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ),
-                  (
-                    <svg viewBox="0 0 24 24" role="presentation" className="h-3 w-3">
-                      <path
-                        d="M12 4c4 0 7 3 7 7 0 5-4 8-7 8s-7-3-7-8c0-4 3-7 7-7z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                      />
-                      <path
-                        d="M12 8a3 3 0 0 1 3 3"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                      />
-                      <path
-                        d="M12 11v4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ),
-                  (
-                    <svg viewBox="0 0 24 24" role="presentation" className="h-3 w-3">
-                      <path
-                        d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                      />
-                    </svg>
-                  ),
+                  <MaterialSymbol name="lock" className="text-[14px]" key="lock" />,
+                  <MaterialSymbol name="policy" className="text-[14px]" key="policy" />,
+                  <MaterialSymbol name="verified_user" className="text-[14px]" key="secure" />,
                 ].map((icon, index) => (
                   <span
                     key={`secure-${index}`}
-                    className="h-6 w-6 rounded-full border border-primary/10 bg-white text-primary flex items-center justify-center"
+                    className="icon-crest icon-crest--security icon-crest--compact h-6 w-6 rounded-full border border-primary/10 bg-white text-primary flex items-center justify-center"
                   >
                     {icon}
                   </span>
@@ -405,33 +260,16 @@ function LoginScreen({ onSignIn }) {
 function AppShell({ view, onNav }) {
   const meta = VIEW_META[view]
   const [collapsed, setCollapsed] = useState(false)
+  const showTopbarText = Boolean(meta.title || meta.subtitle)
+  const showTopbarActions = view === 'dashboard'
+  const showTopbar = showTopbarText || showTopbarActions
 
   return (
     <div className={`app-shell view-${view}${collapsed ? ' is-collapsed' : ''}`}>
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-mark small" aria-hidden="true">
-            <svg viewBox="0 0 64 64" role="presentation">
-              <path
-                d="M32 8c9 6 14 16 13 26-1 10-8 18-18 20-9 2-19-3-22-11 6-10 15-20 27-35z"
-                fill="currentColor"
-              />
-              <path
-                d="M16 20c-7 3-11 9-11 15 0 6 4 11 10 12 4-8 6-17 1-27z"
-                fill="currentColor"
-              />
-              <path
-                d="M47 20c7 3 11 9 11 15 0 6-4 11-10 12-4-8-6-17-1-27z"
-                fill="currentColor"
-              />
-              <path
-                d="M32 18v30"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
+          <div className="brand-mark small icon-crest icon-crest--brand icon-crest--compact" aria-hidden="true">
+            <MaterialSymbol name="spa" className="text-[18px]" filled />
           </div>
           <div className="brand-text">
             <p className="brand-name">Movi Cloud Spa</p>
@@ -443,16 +281,7 @@ function AppShell({ view, onNav }) {
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             onClick={() => setCollapsed((prev) => !prev)}
           >
-            <svg viewBox="0 0 24 24" role="presentation">
-              <path
-                d="M9 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <MaterialSymbol name="chevron_left" className="text-[18px]" />
           </button>
         </div>
 
@@ -464,7 +293,13 @@ function AppShell({ view, onNav }) {
               className={`nav-item${view === item.id ? ' is-active' : ''}`}
               onClick={() => onNav(item.id)}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-icon icon-crest icon-crest--muted icon-crest--compact">
+                <MaterialSymbol
+                  name={item.icon}
+                  className="text-[20px]"
+                  filled={view === item.id}
+                />
+              </span>
               <span className="nav-label">{item.label}</span>
             </button>
           ))}
@@ -472,17 +307,8 @@ function AppShell({ view, onNav }) {
 
         <div className="sidebar-footer">
           <button type="button" className="settings-row">
-            <span className="settings-icon">
-              <svg viewBox="0 0 24 24" role="presentation">
-                <path
-                  d="M12 8.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z"
-                  fill="none"
-                />
-                <path
-                  d="M4 12c0-.4.1-.8.1-1.2l-2-1.5 2-3.4 2.4.7c.6-.5 1.2-.9 1.9-1.2L9 2h4l.6 2.9c.7.3 1.3.7 1.9 1.2l2.4-.7 2 3.4-2 1.5c.1.4.1.8.1 1.2s-.1.8-.1 1.2l2 1.5-2 3.4-2.4-.7c-.6.5-1.2.9-1.9 1.2L13 22H9l-.6-2.9c-.7-.3-1.3-.7-1.9-1.2l-2.4.7-2-3.4 2-1.5c0-.4-.1-.8-.1-1.2z"
-                  fill="none"
-                />
-              </svg>
+            <span className="settings-icon icon-crest icon-crest--muted icon-crest--compact">
+              <MaterialSymbol name="settings" className="text-[16px]" />
             </span>
             <span className="settings-label">Settings</span>
           </button>
@@ -497,33 +323,27 @@ function AppShell({ view, onNav }) {
       </aside>
 
       <main className="app-main">
-        <header className="topbar">
-          <div>
-            <p className="topbar-title">{meta.title}</p>
-            <p className="topbar-sub">{meta.subtitle}</p>
-          </div>
-          <div className="topbar-actions">
-            <button type="button" className="icon-pill" aria-label="Alerts">
-              <svg viewBox="0 0 24 24" role="presentation">
-                <path
-                  d="M6 17h12c-1.5-1.6-2-4.1-2-6.5 0-3-1.8-5.5-4-5.5s-4 2.5-4 5.5c0 2.4-.5 4.9-2 6.5z"
-                  fill="none"
-                />
-                <path
-                  d="M10 19a2 2 0 0 0 4 0"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-            <button type="button" className="icon-pill" aria-label="Profile">
-              <svg viewBox="0 0 24 24" role="presentation">
-                <circle cx="12" cy="9" r="4" fill="none" />
-                <path d="M5 20c1.6-3.3 5-5 7-5s5.4 1.7 7 5" fill="none" />
-              </svg>
-            </button>
-          </div>
-        </header>
+        {showTopbar && (
+          <header className="topbar">
+            {showTopbarText && (
+              <div>
+                <p className="topbar-title">{meta.title}</p>
+                <p className="topbar-sub">{meta.subtitle}</p>
+              </div>
+            )}
+            {showTopbarActions && (
+              <div className="topbar-actions">
+                <button
+                  type="button"
+                  className="icon-pill icon-crest icon-crest--muted"
+                  aria-label="Alerts"
+                >
+                  <MaterialSymbol name="notifications" className="text-[20px]" />
+                </button>
+              </div>
+            )}
+          </header>
+        )}
 
         {view === 'dashboard' && <DashboardView />}
         {view === 'services' && <ServicesView />}
@@ -541,10 +361,7 @@ function DashboardView() {
       <section className="dashboard-grid">
         <article className="feature-card primary">
           <span className="tag">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <rect x="4" y="6" width="16" height="14" rx="3" fill="none" />
-              <path d="M8 4v4M16 4v4M4 10h16" fill="none" />
-            </svg>
+            <MaterialSymbol name="event" className="text-[12px]" />
             Next appointment
           </span>
           <div className="feature-content">
@@ -552,11 +369,8 @@ function DashboardView() {
               <h3>Swedish Massage Therapy</h3>
               <div className="feature-meta">
                 <div className="info-item">
-                  <span className="info-icon">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                      <circle cx="12" cy="12" r="9" fill="none" />
-                      <path d="M12 7v5l3 2" fill="none" />
-                    </svg>
+                  <span className="info-icon icon-crest icon-crest--muted icon-crest--compact">
+                    <MaterialSymbol name="schedule" className="text-[16px]" />
                   </span>
                   <div>
                     <p className="info-label">Time</p>
@@ -564,11 +378,8 @@ function DashboardView() {
                   </div>
                 </div>
                 <div className="info-item">
-                  <span className="info-icon">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                      <circle cx="12" cy="8" r="3" fill="none" />
-                      <path d="M5 20c2-4 5-6 7-6s5 2 7 6" fill="none" />
-                    </svg>
+                  <span className="info-icon icon-crest icon-crest--muted icon-crest--compact">
+                    <MaterialSymbol name="medical_services" className="text-[16px]" />
                   </span>
                   <div>
                     <p className="info-label">Therapist</p>
@@ -581,14 +392,22 @@ function DashboardView() {
                 <button type="button" className="pill ghost">Details</button>
               </div>
             </div>
-            <div className="feature-media"></div>
+            <div className="feature-media">
+              <img
+                src={heroImage}
+                alt="Spa wellness setup"
+                className="feature-media-image"
+              />
+            </div>
           </div>
         </article>
         <aside className="insight-card">
           <p className="insight-title">Wellness insight</p>
           <div className="insight-meter">
-            <span>15h</span>
-            <small>Relaxation</small>
+            <div className="insight-meter-content">
+              <span>15h</span>
+              <small>Relaxation</small>
+            </div>
           </div>
           <p className="muted">80% towards your mindful goal.</p>
         </aside>
@@ -610,11 +429,8 @@ function DashboardView() {
             <h5>Deep Hydration Facial</h5>
             <span>Last visited: 2 weeks ago</span>
             <button type="button" className="ritual-action">
-              <span className="ritual-action-icon">
-                <svg viewBox="0 0 24 24" role="presentation">
-                  <path d="M4 12h6l2-2 4 6 4-8" fill="none" />
-                  <circle cx="6" cy="12" r="1" fill="currentColor" />
-                </svg>
+              <span className="ritual-action-icon icon-crest icon-crest--muted icon-crest--compact">
+                <MaterialSymbol name="autorenew" className="text-[14px]" />
               </span>
               Book Again
             </button>
@@ -624,11 +440,8 @@ function DashboardView() {
             <h5>Volcanic Stone Ritual</h5>
             <span>Last visited: 1 month ago</span>
             <button type="button" className="ritual-action">
-              <span className="ritual-action-icon">
-                <svg viewBox="0 0 24 24" role="presentation">
-                  <path d="M4 12h6l2-2 4 6 4-8" fill="none" />
-                  <circle cx="6" cy="12" r="1" fill="currentColor" />
-                </svg>
+              <span className="ritual-action-icon icon-crest icon-crest--muted icon-crest--compact">
+                <MaterialSymbol name="autorenew" className="text-[14px]" />
               </span>
               Book Again
             </button>
@@ -644,7 +457,7 @@ function DashboardView() {
         </div>
       </section>
       <button type="button" className="fab" aria-label="Add">
-        +
+        <MaterialSymbol name="add" className="text-[24px]" />
       </button>
     </div>
   )
@@ -653,14 +466,6 @@ function DashboardView() {
 function ServicesView() {
   return (
     <div className="view-body services-view">
-      <section className="services-hero">
-        <h3>Serene Rituals</h3>
-        <p className="muted">
-          Experience our curated collection of restorative therapies designed to
-          align body, mind, and spirit.
-        </p>
-      </section>
-
       <div className="chip-row service-filters">
         <button className="chip active" type="button">All Treatments</button>
         <button className="chip" type="button">Aromatherapy</button>
@@ -713,11 +518,8 @@ function ServicesView() {
 
       <div className="promo-row">
         <div className="promo-card">
-          <span className="promo-icon">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <path d="M12 4c4 0 7 3 7 7 0 5-4 8-7 8s-7-3-7-8c0-4 3-7 7-7z" fill="none" />
-              <path d="M12 9a3 3 0 0 1 3 3" fill="none" />
-            </svg>
+          <span className="promo-icon icon-crest icon-crest--muted">
+            <MaterialSymbol name="auto_awesome" className="text-[18px]" />
           </span>
           <div>
             <p className="promo-label">New Ritual</p>

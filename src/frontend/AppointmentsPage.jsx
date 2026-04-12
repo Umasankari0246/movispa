@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import MaterialSymbol from '../components/MaterialSymbol.jsx'
 
 const therapists = [
   { value: 'Sarah Jenkins', label: 'Sarah Jenkins' },
@@ -352,9 +353,7 @@ function AppointmentsView() {
               </div>
             </div>
             <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-              <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <MaterialSymbol name="calendar_month" className="text-[24px] text-blue-600" />
             </div>
           </div>
         </div>
@@ -367,9 +366,7 @@ function AppointmentsView() {
               <p className="text-xs text-gray-500 mt-2">63% capacity reached</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
-              <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <MaterialSymbol name="check_circle" className="text-[24px] text-green-600" />
             </div>
           </div>
         </div>
@@ -382,9 +379,7 @@ function AppointmentsView() {
               <p className="text-xs text-yellow-600 mt-2">Requires urgent action</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-yellow-50 flex items-center justify-center">
-              <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <MaterialSymbol name="pending" className="text-[24px] text-yellow-600" />
             </div>
           </div>
         </div>
@@ -398,9 +393,7 @@ function AppointmentsView() {
               <p className="text-xs mt-2" style={{color: '#3e2723', opacity: 0.9}}>in 14 min</p>
             </div>
             <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-              <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <MaterialSymbol name="schedule" className="text-[24px] text-white" />
             </div>
           </div>
         </div>
@@ -418,9 +411,7 @@ function AppointmentsView() {
               className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-300 bg-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
               style={{focusRingColor: '#1f4d3e'}}
             />
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <MaterialSymbol name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-gray-400" />
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -429,13 +420,9 @@ function AppointmentsView() {
               className="flex items-center gap-2 h-12 px-4 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               onClick={() => setShowFilterDropdown(!showFilterDropdown)}
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
+              <MaterialSymbol name="filter_alt" className="text-[16px]" />
               Filters
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <MaterialSymbol name="expand_more" className="text-[14px]" />
             </button>
             {showFilterDropdown && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
@@ -552,10 +539,7 @@ function AppointmentsView() {
                           setIsViewModalOpen(true)
                         }}
                       >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
+                        <MaterialSymbol name="visibility" className="text-[20px]" />
                       </button>
                       <button 
                         type="button" 
@@ -596,9 +580,7 @@ function AppointmentsView() {
                           setStep(1)
                         }}
                       >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <MaterialSymbol name="edit_square" className="text-[20px]" />
                       </button>
                       {appointment.status === 'Pending' && (
                         <>
@@ -609,9 +591,7 @@ function AppointmentsView() {
                             }}
                             title="Approve"
                           >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            <MaterialSymbol name="check" className="text-[16px]" />
                           </button>
                           <button 
                             className="p-2 rounded-lg border border-gray-300 bg-white text-red-600 hover:bg-red-50 transition-colors"
@@ -620,9 +600,7 @@ function AppointmentsView() {
                             }}
                             title="Reject"
                           >
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <MaterialSymbol name="close" className="text-[16px]" />
                           </button>
                         </>
                       )}
@@ -636,9 +614,7 @@ function AppointmentsView() {
                           }}
                           title="Delete"
                         >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <MaterialSymbol name="delete" className="text-[16px]" />
                         </button>
                       )}
                     </div>
@@ -659,17 +635,13 @@ function AppointmentsView() {
               className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <MaterialSymbol name="chevron_left" className="text-[16px]" />
             </button>
             <button 
               className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <MaterialSymbol name="chevron_right" className="text-[16px]" />
             </button>
           </div>
         </div>
