@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import React from 'react'
+import MaterialSymbol from '../components/MaterialSymbol.jsx'
 
 const TherapistManagement = () => {
   const [activeTab, setActiveTab] = useState('details')
@@ -191,6 +192,7 @@ const TherapistManagement = () => {
   const [isAvailabilityEditing, setIsAvailabilityEditing] = useState(false)
   const [isServiceEditing, setIsServiceEditing] = useState(false)
   const [showLeaveDateInput, setShowLeaveDateInput] = useState(false)
+  const [newLeaveDate, setNewLeaveDate] = useState('')
 
   useEffect(() => {
     setAvailabilityDraft({
@@ -202,6 +204,20 @@ const TherapistManagement = () => {
     })
     setServiceDraft(selectedTherapist.assignedServices)
   }, [selectedTherapist])
+
+  const todayDate = new Date().toLocaleDateString('en-CA')
+  const todayWeekday = new Date().toLocaleString('en-US', { weekday: 'long' })
+
+  const totalTherapists = therapists.length
+  const therapistsOnLeaveToday = therapists.filter(therapist => therapist.leaveDates.includes(todayDate)).length
+  const therapistsAvailableToday = therapists.filter(therapist =>
+    therapist.workingDays.includes(todayWeekday) && !therapist.leaveDates.includes(todayDate)
+  ).length
+  const activeSessions = therapists.reduce((count, therapist) => {
+    return count + therapist.appointments.filter(appointment =>
+      appointment.status === 'Confirmed' && appointment.date === todayDate
+    ).length
+  }, 0)
 
   const availableServices = [
     'Swedish Massage',
@@ -342,6 +358,7 @@ const TherapistManagement = () => {
       ...prev,
       leaveDates: [...prev.leaveDates, date]
     }))
+    setNewLeaveDate('')
   }
 
   const handleRemoveLeaveDate = (dateToRemove) => {
@@ -414,6 +431,24 @@ const TherapistManagement = () => {
           ) : (
             // Show Normal Therapist Details
             <>
+              <div className="grid gap-4 mb-6 md:grid-cols-4">
+                <div className="stats-card">
+                  <p className="text-sm text-muted uppercase tracking-[1px]">Total Therapists</p>
+                  <p className="text-3xl font-semibold mt-3">{totalTherapists}</p>
+                </div>
+                <div className="stats-card">
+                  <p className="text-sm text-muted uppercase tracking-[1px]">Available Today</p>
+                  <p className="text-3xl font-semibold mt-3">{therapistsAvailableToday}</p>
+                </div>
+                <div className="stats-card">
+                  <p className="text-sm text-muted uppercase tracking-[1px]">On Leave</p>
+                  <p className="text-3xl font-semibold mt-3">{therapistsOnLeaveToday}</p>
+                </div>
+                <div className="stats-card">
+                  <p className="text-sm text-muted uppercase tracking-[1px]">Active Sessions</p>
+                  <p className="text-3xl font-semibold mt-3">{activeSessions}</p>
+                </div>
+              </div>
               {/* Tab Navigation */}
               <div className="chip-row mb-6">
                 {[
@@ -602,18 +637,37 @@ const TherapistManagement = () => {
                             )}
                           </div>
                           {showLeaveDateInput ? (
-                            <div className="mt-3">
+                            <div className="mt-3 space-y-3">
                               <input
                                 type="date"
-                                value={''}
-                                onChange={(e) => {
-                                  if (e.target.value) {
-                                    handleAddLeaveDate(e.target.value)
-                                    setShowLeaveDateInput(false)
-                                  }
-                                }}
+                                value={newLeaveDate}
+                                onChange={(e) => setNewLeaveDate(e.target.value)}
                                 className="w-full h-11 rounded-[18px] border border-primary/15 bg-white px-4 text-[14px]"
                               />
+                              <div className="flex gap-3 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (newLeaveDate) {
+                                      handleAddLeaveDate(newLeaveDate)
+                                      setShowLeaveDateInput(false)
+                                    }
+                                  }}
+                                  className="pill text-sm"
+                                >
+                                  Add Date
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowLeaveDateInput(false)
+                                    setNewLeaveDate('')
+                                  }}
+                                  className="pill ghost text-sm"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <button 
