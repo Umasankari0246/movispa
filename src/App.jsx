@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import AppointmentsView from './frontend/AppointmentsPage.jsx'
+import ClientsView from './frontend/clients.jsx'
 import TherapistManagement from './frontend/TherapistManagement.jsx'
 import MaterialSymbol from './components/MaterialSymbol.jsx'
 import heroImage from './assets/hero.png'
@@ -20,6 +21,11 @@ const NAV_ITEMS = [
     id: 'therapists',
     label: 'Therapists',
     icon: 'person',
+  },
+  {
+    id: 'clients',
+    label: 'Clients',
+    icon: 'groups',
   },
   {
     id: 'appointments',
@@ -50,6 +56,10 @@ const VIEW_META = {
     title: '',
     subtitle: '',
   },
+  clients: {
+    title: 'Client Management',
+    subtitle: 'View client profiles, bookings, and loyalty details.',
+  },
   offers: {
     title: 'Signature Packages',
     subtitle: 'Limited availability for seasonal rituals and retreats.',
@@ -58,6 +68,54 @@ const VIEW_META = {
 
 function App() {
   const [view, setView] = useState('login')
+  const [clients, setClients] = useState([
+    {
+      id: 1,
+      name: 'Sarah Jenkins',
+      email: 'sarah.jenkins@example.com',
+      phone: '+91 98765 43210',
+      status: 'Active',
+      address: '123 Wellness Lane, Sanctuary City',
+      age: '28',
+      preferences: 'Swedish Massage, Aromatherapy',
+      appointmentHistory: [
+        { date: '2024-04-10', service: 'Swedish Massage', status: 'Completed' },
+        { date: '2024-03-15', service: 'Aromatherapy', status: 'Completed' },
+      ],
+      paymentHistory: [
+        { date: '2024-04-10', amount: 1500, status: 'Paid' },
+        { date: '2024-03-15', amount: 1800, status: 'Paid' },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Emily Johnson',
+      email: 'emily.johnson@example.com',
+      phone: '+91 98765 43211',
+      status: 'Active',
+      address: '456 Relaxation St, Calm Town',
+      age: '32',
+      preferences: 'Facial Treatments',
+      appointmentHistory: [
+        { date: '2024-04-05', service: 'Basic Facial', status: 'Completed' },
+      ],
+      paymentHistory: [
+        { date: '2024-04-05', amount: 800, status: 'Paid' },
+      ],
+    },
+    {
+      id: 3,
+      name: 'Marcus Chen',
+      email: 'marcus.chen@example.com',
+      phone: '+91 98765 43212',
+      status: 'Inactive',
+      address: '789 Serenity Blvd, Peace City',
+      age: '45',
+      preferences: 'Hair Services',
+      appointmentHistory: [],
+      paymentHistory: [],
+    },
+  ])
 
   if (view === 'login') {
     return <LoginScreen onSignIn={() => setView('dashboard')} />
@@ -65,7 +123,7 @@ function App() {
 
   return (
     <div className="app-frame">
-      <AppShell view={view} onNav={setView} />
+      <AppShell view={view} onNav={setView} clients={clients} setClients={setClients} />
     </div>
   )
 }
@@ -257,7 +315,7 @@ function LoginScreen({ onSignIn }) {
   )
 }
 
-function AppShell({ view, onNav }) {
+function AppShell({ view, onNav, clients, setClients }) {
   const meta = VIEW_META[view]
   const [collapsed, setCollapsed] = useState(false)
   const showTopbarText = Boolean(meta.title || meta.subtitle)
@@ -348,7 +406,8 @@ function AppShell({ view, onNav }) {
         {view === 'dashboard' && <DashboardView />}
         {view === 'services' && <ServicesView />}
         {view === 'therapists' && <TherapistManagement />}
-        {view === 'appointments' && <AppointmentsView />}
+        {view === 'clients' && <ClientsView clients={clients} setClients={setClients} />}
+        {view === 'appointments' && <AppointmentsView clients={clients} setClients={setClients} />}
         {view === 'offers' && <OffersView />}
       </main>
     </div>
@@ -462,6 +521,7 @@ function DashboardView() {
     </div>
   )
 }
+
 
 function ServicesView() {
   return (

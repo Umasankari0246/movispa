@@ -60,6 +60,29 @@ const serviceGroups = [
   },
 ]
 
+const servicePrices = {
+  'Swedish Massage': 1500,
+  'Deep Tissue Massage': 2000,
+  'Aromatherapy Massage': 1800,
+  'Basic Facial': 800,
+  'Herbal Facial': 1200,
+  'Anti-Aging Facial': 2000,
+  'Acne Treatment Facial': 1500,
+  'Manicure': 500,
+  'Pedicure': 600,
+  'Nail Art': 1000,
+  'Body Scrub': 1500,
+  'Body Polishing': 2000,
+  'Body Wrap': 2500,
+  'Hair Spa': 1200,
+  'Hair Cut': 400,
+  'Hair Coloring': 2000,
+  'Hair Smoothening / Straightening': 5000,
+  'Steam Bath': 500,
+  'Yoga Session': 500,
+  'Meditation Therapy': 400,
+}
+
 const appointmentItems = [
   {
     date: 'Apr 14, 10:30 AM',
@@ -95,7 +118,8 @@ const initialFormState = {
   medicalConditions: '',
   preferredService: 'Swedish Massage',
   appointmentDate: '',
-  appointmentTime: '',
+  startTime: '',
+  endTime: '',
   selectedService: 'Swedish Massage',
   assignedTherapist: therapists[0].value,
   assignedRoom: rooms[0].value,
@@ -123,7 +147,8 @@ const demoFormData = {
   medicalConditions: 'Mild back tension, regular exercise lover',
   preferredService: 'Swedish Massage',
   appointmentDate: '2026-04-15',
-  appointmentTime: '10:00',
+  startTime: '10:00',
+  endTime: '11:00',
   selectedService: 'Swedish Massage',
   assignedTherapist: 'Sarah Jenkins',
   assignedRoom: 'Room 101 - Massage Suite',
@@ -136,15 +161,17 @@ const demoFormData = {
   upiApp: 'GPay',
 }
 
-function AppointmentsView() {
+function AppointmentsView({ clients, setClients }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [form, setForm] = useState(initialFormState)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [paymentCompleted, setPaymentCompleted] = useState(false)
   const [termsAgreed, setTermsAgreed] = useState(false)
   const [transactionId, setTransactionId] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [isSuccessOpen, setIsSuccessOpen] = useState(false)
   const [isPaymentSuccessOpen, setIsPaymentSuccessOpen] = useState(false)
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false)
   const [step, setStep] = useState(1)
   const [appointments, setAppointments] = useState([
     {
@@ -203,7 +230,7 @@ function AppointmentsView() {
   const [isEditFormModalOpen, setIsEditFormModalOpen] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState(null)
   const [filterBy, setFilterBy] = useState('all')
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   // Filter appointments based on search and filter
   const filteredAppointments = appointments.filter(appointment => {
@@ -219,6 +246,32 @@ function AppointmentsView() {
     return matchesSearch && matchesFilter
   })
 
+  const calculatePrice = () => {
+    const basePrice = servicePrices[form.selectedService] || 1500
+    if (!form.startTime || !form.endTime) return basePrice
+
+    const [startHour, startMin] = form.startTime.split(':').map(Number)
+    const [endHour, endMin] = form.endTime.split(':').map(Number)
+    const startMinutes = startHour * 60 + startMin
+    const endMinutes = endHour * 60 + endMin
+    const durationHours = (endMinutes - startMinutes) / 60
+
+    if (durationHours > 1) return basePrice + 300
+    if (durationHours < 1) return Math.max(basePrice - 300, 0)
+    return basePrice
+  }
+
+  const appointmentSummary = {
+    clientName: form.fullName || 'Sarah Jenkins',
+    clientId: '#MS-9445',
+    therapist: form.assignedTherapist || 'Elena Thorne',
+    service: form.selectedService || 'Aromatherapy',
+    room: form.assignedRoom || 'Zen Den',
+    date: form.appointmentDate || 'Oct 24, 2023',
+    time: form.startTime && form.endTime ? `${form.startTime} - ${form.endTime}` : '03:45 PM - 04:45 PM',
+    price: calculatePrice(),
+  }
+
   const stepCompletion = {
     1:
       Boolean(form.fullName) &&
@@ -233,11 +286,12 @@ function AppointmentsView() {
       Boolean(form.preferredService),
     3:
       Boolean(form.appointmentDate) &&
-      Boolean(form.appointmentTime) &&
+      Boolean(form.startTime) &&
+      Boolean(form.endTime) &&
       Boolean(form.selectedService) &&
       Boolean(form.assignedTherapist) &&
       Boolean(form.assignedRoom),
-    4: Boolean(form.paymentMethod),
+    4: paymentCompleted,
     5: form.termsAccepted,
   }
 
@@ -251,28 +305,54 @@ function AppointmentsView() {
       ...prev,
       [field]: value,
     }))
+
+    if (paymentCompleted) {
+      setPaymentCompleted(false)
+      setShowPaymentOptions(false)
+    }
   }
 
   const handleAutoFill = () => {
     setForm(demoFormData)
   }
 
+  const validatePaymentDetails = () => {
+    if (form.paymentMethod === 'Credit/Debit Card') {
+      return Boolean(
+        form.cardNumber.trim() &&
+        form.cardHolderName.trim() &&
+        form.expiryDate.trim() &&
+        form.cvv.trim()
+      )
+    }
+
+    if (form.paymentMethod === 'UPI') {
+      return Boolean(form.upiId.trim() && form.upiApp.trim())
+    }
+
+    return false
+  }
+
   const handlePayment = (event) => {
     event.preventDefault()
-    if (stepCompletion[4]) {
-      // Generate transaction ID
-      const txnId = 'TXN' + Date.now().toString().slice(-8)
-      setTransactionId(txnId)
-      setCustomerName(form.fullName)
-      setPaymentSuccess(true)
-      // Show payment success popup
-      setIsPaymentSuccessOpen(true)
-      // Proceed to step 5 after a delay
-      setTimeout(() => {
-        setIsPaymentSuccessOpen(false)
-        setStep(5)
-      }, 2000)
+
+    if (!validatePaymentDetails()) {
+      window.alert('Please complete the selected payment method fields before paying.')
+      return
     }
+
+    const txnId = 'TXN' + Date.now().toString().slice(-8)
+    setTransactionId(txnId)
+    setCustomerName(form.fullName || 'Sarah Jenkins')
+    setPaymentSuccess(true)
+    setPaymentCompleted(true)
+    setIsPaymentSuccessOpen(true)
+    setIsPaymentModalOpen(false)
+
+    setTimeout(() => {
+      setIsPaymentSuccessOpen(false)
+      setStep(5)
+    }, 2000)
   }
 
   const handleStepNext = (event) => {
@@ -285,6 +365,52 @@ function AppointmentsView() {
   }
 
   const handleConfirmBooking = () => {
+    // Check if client exists, if not add as inactive
+    const existingClientIndex = clients.findIndex(client => 
+      client.email === form.email || client.phone === form.phone
+    )
+    
+    let clientId
+    if (existingClientIndex === -1) {
+      // Add new client as inactive
+      const newClient = {
+        id: clients.length + 1,
+        name: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        status: 'Inactive',
+        address: form.address,
+        age: form.ageOrDob,
+        preferences: form.preferredService,
+        appointmentHistory: [],
+        paymentHistory: [],
+      }
+      setClients([...clients, newClient])
+      clientId = newClient.id
+    } else {
+      clientId = clients[existingClientIndex].id
+    }
+    
+    // Activate the client
+    setClients(prevClients => 
+      prevClients.map(client => 
+        client.id === clientId 
+          ? { 
+              ...client, 
+              status: 'Active',
+              appointmentHistory: [
+                ...client.appointmentHistory,
+                {
+                  date: form.appointmentDate,
+                  service: form.selectedService,
+                  status: 'Confirmed'
+                }
+              ]
+            }
+          : client
+      )
+    )
+    
     // Generate random transaction ID
     const transactionId = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase()
     
@@ -297,7 +423,7 @@ function AppointmentsView() {
       service: form.selectedService,
       room: form.assignedRoom,
       date: form.appointmentDate,
-      time: form.appointmentTime,
+      time: `${form.startTime} - ${form.endTime}`,
       status: 'Pending',
       transactionId: transactionId
     }
@@ -329,6 +455,8 @@ function AppointmentsView() {
   const openModal = () => {
     setIsModalOpen(true)
     setStep(1)
+    setShowPaymentOptions(false)
+    setPaymentCompleted(false)
   }
 
   return (
@@ -415,57 +543,14 @@ function AppointmentsView() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div className="relative z-10" style={{ overflow: 'visible' }}>
             <button 
               className="flex items-center gap-2 h-12 px-4 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
             >
               <MaterialSymbol name="filter_alt" className="text-[16px]" />
               Filters
               <MaterialSymbol name="expand_more" className="text-[14px]" />
             </button>
-            {showFilterDropdown && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                <div className="py-2">
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => {
-                      setFilterBy('all')
-                      setShowFilterDropdown(false)
-                    }}
-                  >
-                    All Appointments
-                  </button>
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => {
-                      setFilterBy('confirmed')
-                      setShowFilterDropdown(false)
-                    }}
-                  >
-                    Confirmed
-                  </button>
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => {
-                      setFilterBy('pending')
-                      setShowFilterDropdown(false)
-                    }}
-                  >
-                    Pending
-                  </button>
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => {
-                      setFilterBy('rejected')
-                      setShowFilterDropdown(false)
-                    }}
-                  >
-                    Rejected
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
           <button
             type="button"
@@ -558,7 +643,8 @@ function AppointmentsView() {
                             medicalConditions: '',
                             preferredService: appointment.service,
                             appointmentDate: appointment.date,
-                            appointmentTime: appointment.time,
+                            startTime: appointment.time.split(' - ')[0] || '',
+                            endTime: appointment.time.split(' - ')[1] || '',
                             selectedService: appointment.service,
                             assignedTherapist: appointment.therapist,
                             assignedRoom: appointment.room,
@@ -843,12 +929,21 @@ function AppointmentsView() {
                           />
                         </label>
                         <label className="block text-sm text-slate-800">
-                          Time of visit
+                          Start Time
                           <input
                             type="time"
                             className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.appointmentTime || ''}
-                            onChange={handleChange('appointmentTime')}
+                            value={form.startTime || ''}
+                            onChange={handleChange('startTime')}
+                          />
+                        </label>
+                        <label className="block text-sm text-slate-800">
+                          End Time
+                          <input
+                            type="time"
+                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                            value={form.endTime || ''}
+                            onChange={handleChange('endTime')}
                           />
                         </label>
                       </div>
@@ -898,125 +993,52 @@ function AppointmentsView() {
                   )}
 
                   {step === 4 && (
-                    <div className="space-y-5">
-                      <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                        <h4 className="text-lg font-semibold mb-4">4. Payment Method</h4>
-                        <div className="space-y-4">
-                          <label className="flex items-center gap-3 text-sm text-slate-800">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value="Credit/Debit Card"
-                              checked={form.paymentMethod === 'Credit/Debit Card'}
-                              onChange={handleChange('paymentMethod')}
-                              className="accent-primary"
-                            />
-                            Credit / Debit Card
-                          </label>
-                          <label className="flex items-center gap-3 text-sm text-slate-800">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value="UPI"
-                              checked={form.paymentMethod === 'UPI'}
-                              onChange={handleChange('paymentMethod')}
-                              className="accent-primary"
-                            />
-                            UPI
-                          </label>
+                    <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                      <h4 className="text-lg font-semibold mb-4">4. Appointment & Payment</h4>
+                      <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+                        <h5 className="text-sm font-semibold text-slate-900 mb-4">Appointment Details</h5>
+                        <div className="text-sm space-y-3 text-slate-700">
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Client:</span>
+                            <span className="font-semibold">{appointmentSummary.clientName}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">ID:</span>
+                            <span className="font-semibold">{appointmentSummary.clientId}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Therapist:</span>
+                            <span className="font-semibold">{appointmentSummary.therapist}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Service:</span>
+                            <span className="font-semibold">{appointmentSummary.service}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Room:</span>
+                            <span className="font-semibold">{appointmentSummary.room}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Date:</span>
+                            <span className="font-semibold">{appointmentSummary.date}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Time:</span>
+                            <span className="font-semibold">{appointmentSummary.time}</span>
+                          </div>
+                          <div className="flex justify-between gap-4">
+                            <span className="text-slate-600">Amount:</span>
+                            <span className="font-semibold">₹{appointmentSummary.price}</span>
+                          </div>
                         </div>
-
-                        {form.paymentMethod === 'Credit/Debit Card' && (
-                          <div className="mt-5 space-y-4 rounded-[18px] border border-blue-200 bg-blue-50 p-4">
-                            <h5 className="text-sm font-semibold text-slate-800">Card Details</h5>
-                            <label className="block text-sm text-slate-800">
-                              Card Holder Name
-                              <input
-                                className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                                value={form.cardHolderName}
-                                onChange={handleChange('cardHolderName')}
-                                placeholder="John Doe"
-                              />
-                            </label>
-                            <label className="block text-sm text-slate-800">
-                              Card Number
-                              <input
-                                className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                                value={form.cardNumber}
-                                onChange={handleChange('cardNumber')}
-                                placeholder="4532 1234 5678 9010"
-                              />
-                            </label>
-                            <div className="grid gap-4 md:grid-cols-2">
-                              <label className="block text-sm text-slate-800">
-                                Expiry Date
-                                <input
-                                  className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                                  value={form.expiryDate}
-                                  onChange={handleChange('expiryDate')}
-                                  placeholder="MM/YY"
-                                />
-                              </label>
-                              <label className="block text-sm text-slate-800">
-                                CVV
-                                <input
-                                  className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                                  value={form.cvv}
-                                  onChange={handleChange('cvv')}
-                                  placeholder="123"
-                                />
-                              </label>
-                            </div>
-                          </div>
-                        )}
-
-                        {form.paymentMethod === 'UPI' && (
-                          <div className="mt-5 space-y-4 rounded-[18px] border border-purple-200 bg-purple-50 p-4">
-                            <h5 className="text-sm font-semibold text-slate-800">UPI Details</h5>
-                            <div className="grid gap-4 md:grid-cols-2 items-start">
-                              <div>
-                                <label className="block text-sm text-slate-800">
-                                  UPI ID
-                                  <input
-                                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                                    value={form.upiId}
-                                    onChange={handleChange('upiId')}
-                                    placeholder="you@upi"
-                                  />
-                                </label>
-                                <label className="block text-sm text-slate-800 mt-4">
-                                  App Used
-                                  <select
-                                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                                    value={form.upiApp}
-                                    onChange={handleChange('upiApp')}
-                                  >
-                                    <option value="">Select UPI App</option>
-                                    <option value="GPay">Google Pay (GPay)</option>
-                                    <option value="PhonePe">PhonePe</option>
-                                    <option value="Paytm">Paytm</option>
-                                  </select>
-                                </label>
-                              </div>
-                              <div className="flex items-center justify-center">
-                                <div className="rounded-[12px] border border-slate-300 bg-white p-3">
-                                  <img
-                                    src="https://static.vecteezy.com/system/resources/previews/002/258/271/original/template-of-qr-code-ready-to-scan-with-smartphone-illustration-vector.jpg"
-                                    alt="QR Code"
-                                    className="h-32 w-32 object-cover"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
                         <div className="mt-6 flex justify-center">
                           <button
                             type="button"
-                            className="h-12 rounded-full bg-primary px-8 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-slate-300"
-                            disabled={!stepCompletion[4]}
-                            onClick={handlePayment}
+                            className="rounded-full bg-blue-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-600"
+                            onClick={() => {
+                              setForm(prev => ({ ...prev, paymentMethod: 'Credit/Debit Card' }))
+                              setIsPaymentModalOpen(true)
+                            }}
                           >
                             Pay to Book Appointment
                           </button>
@@ -1100,7 +1122,7 @@ function AppointmentsView() {
                       ? 'Select payment method to continue.'
                       : 'Agree to terms to confirm booking.'}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 justify-end">
                     {step > 1 && (
                       <button
                         type="button"
@@ -1112,20 +1134,11 @@ function AppointmentsView() {
                     )}
                     <button
                       type="button"
-                      className="h-12 rounded-full border px-6 text-sm font-medium transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{borderColor: '#1f4d3e', color: '#1f4d3e'}}
+                      className="h-12 rounded-full bg-green-200 px-6 text-sm font-semibold text-green-800 transition hover:bg-green-300 disabled:cursor-not-allowed disabled:bg-gray-300"
                       onClick={handleStepNext}
                       disabled={!stepCompletion[step]}
                     >
-                      Next
-                    </button>
-                    <button
-                      type="submit"
-                      className="h-12 rounded-full px-6 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-gray-300"
-                      style={{backgroundColor: '#2f7d6d'}}
-                      disabled={step === 5 ? !stepCompletion[5] : !stepCompletion[step]}
-                    >
-                      {step < 4 ? 'Next' : step === 4 ? 'Next' : 'Confirm Booking'}
+                      {step === 5 ? 'Confirm Booking' : 'Next'}
                     </button>
                   </div>
                 </div>
@@ -1670,6 +1683,150 @@ function AppointmentsView() {
     </div>
   </div>
 )}
+
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Payment</h3>
+              <button
+                type="button"
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsPaymentModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="mb-4 text-center">
+              <p className="text-lg font-semibold text-gray-900">Amount to Pay: ₹{appointmentSummary.price}</p>
+            </div>
+            <form onSubmit={handlePayment}>
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center gap-3 text-sm text-slate-800">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="Credit/Debit Card"
+                      checked={form.paymentMethod === 'Credit/Debit Card'}
+                      onChange={handleChange('paymentMethod')}
+                      className="accent-primary"
+                    />
+                    Credit / Debit Card
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center gap-3 text-sm text-slate-800">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="UPI"
+                      checked={form.paymentMethod === 'UPI'}
+                      onChange={handleChange('paymentMethod')}
+                      className="accent-primary"
+                    />
+                    UPI
+                  </label>
+                </div>
+
+                {form.paymentMethod === 'Credit/Debit Card' && (
+                  <div className="space-y-4 rounded-[18px] border border-blue-200 bg-blue-50 p-4">
+                    <h5 className="text-sm font-semibold text-slate-800">Card Details</h5>
+                    <label className="block text-sm text-slate-800">
+                      Card Holder Name
+                      <input
+                        className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                        value={form.cardHolderName}
+                        onChange={handleChange('cardHolderName')}
+                        placeholder="John Doe"
+                      />
+                    </label>
+                    <label className="block text-sm text-slate-800">
+                      Card Number
+                      <input
+                        className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                        value={form.cardNumber}
+                        onChange={handleChange('cardNumber')}
+                        placeholder="4532 1234 5678 9010"
+                      />
+                    </label>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="block text-sm text-slate-800">
+                        Expiry Date
+                        <input
+                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                          value={form.expiryDate}
+                          onChange={handleChange('expiryDate')}
+                          placeholder="MM/YY"
+                        />
+                      </label>
+                      <label className="block text-sm text-slate-800">
+                        CVV
+                        <input
+                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                          value={form.cvv}
+                          onChange={handleChange('cvv')}
+                          placeholder="123"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {form.paymentMethod === 'UPI' && (
+                  <div className="space-y-4 rounded-[18px] border border-purple-200 bg-purple-50 p-4">
+                    <h5 className="text-sm font-semibold text-slate-800">UPI Details</h5>
+                    <div className="grid gap-4 md:grid-cols-2 items-start">
+                      <div>
+                        <label className="block text-sm text-slate-800">
+                          UPI ID
+                          <input
+                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                            value={form.upiId}
+                            onChange={handleChange('upiId')}
+                            placeholder="you@upi"
+                          />
+                        </label>
+                        <label className="block text-sm text-slate-800 mt-4">
+                          App Used
+                          <select
+                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
+                            value={form.upiApp}
+                            onChange={handleChange('upiApp')}
+                          >
+                            <option value="">Select UPI App</option>
+                            <option value="GPay">Google Pay (GPay)</option>
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="Paytm">Paytm</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <div className="rounded-[12px] border border-slate-300 bg-white p-3">
+                          <img
+                            src="https://static.vecteezy.com/system/resources/previews/002/258/271/original/template-of-qr-code-ready-to-scan-with-smartphone-illustration-vector.jpg"
+                            alt="QR Code"
+                            className="h-32 w-32 object-cover"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-center">
+                  <button
+                    type="submit"
+                    className="h-12 rounded-full bg-blue-500 px-8 text-sm font-semibold text-white transition hover:bg-blue-600"
+                  >
+                    Pay ₹{appointmentSummary.price}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {isEditModalOpen && editingAppointment && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
