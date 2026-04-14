@@ -5,6 +5,7 @@ import MaterialSymbol from '../components/MaterialSymbol.jsx'
 const TherapistManagement = () => {
   const [activeTab, setActiveTab] = useState('details')
   const [showAddTherapist, setShowAddTherapist] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [therapists, setTherapists] = useState([
     {
       id: 1,
@@ -208,6 +209,16 @@ const TherapistManagement = () => {
   const todayDate = new Date().toLocaleDateString('en-CA')
   const todayWeekday = new Date().toLocaleString('en-US', { weekday: 'long' })
 
+  const filteredTherapists = therapists.filter(therapist => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return true
+    return (
+      therapist.name.toLowerCase().includes(query) ||
+      therapist.specialization.toLowerCase().includes(query) ||
+      therapist.email.toLowerCase().includes(query)
+    )
+  })
+
   const totalTherapists = therapists.length
   const therapistsOnLeaveToday = therapists.filter(therapist => therapist.leaveDates.includes(todayDate)).length
   const therapistsAvailableToday = therapists.filter(therapist =>
@@ -379,59 +390,10 @@ const TherapistManagement = () => {
 
   return (
     <div className="view-body">
-      <div className="flex gap-6">
-        {/* Therapist List Sidebar */}
-        <div className="w-80 space-y-4">
-          <div className="bg-white rounded-2xl p-4 shadow-soft">
-            <h4 className="text-lg font-semibold mb-4">Therapists</h4>
-            <div className="space-y-2">
-              {therapists.map(therapist => (
-                <button
-                  key={therapist.id}
-                  onClick={() => setSelectedTherapist(therapist)}
-                  className={`w-full text-left p-3 rounded-xl transition-all ${
-                    selectedTherapist.id === therapist.id 
-                      ? 'bg-primary/10 border border-primary/20' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold">
-                      {therapist.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <p className="font-medium">{therapist.name}</p>
-                      <p className="text-sm text-muted">{therapist.specialization}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button 
-            onClick={() => setShowAddTherapist(true)}
-            className="w-full h-11 rounded-full bg-gradient-to-br from-primary to-accent text-white text-sm uppercase tracking-[1.2px] shadow-[0_18px_28px_rgba(31,77,62,0.28)] transition-all duration-300 hover:scale-[1.02]"
-          >
-            + Add New Therapist
-          </button>
-        </div>
-
+      <div className="space-y-6">
         {/* Main Content Area */}
-        <div className="flex-1 relative">
-          {showAddTherapist ? (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-              <div className="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl">
-                <AddTherapistForm
-                  onSave={handleAddTherapist}
-                  onClose={() => setShowAddTherapist(false)}
-                />
-              </div>
-            </div>
-          ) : (
-            // Show Normal Therapist Details
-            <>
-              <div className="grid gap-4 mb-6 md:grid-cols-4">
+        <div>
+<div className="grid gap-4 mb-6 md:grid-cols-3">
                 <div className="stats-card">
                   <p className="text-sm text-muted uppercase tracking-[1px]">Total Therapists</p>
                   <p className="text-3xl font-semibold mt-3">{totalTherapists}</p>
@@ -444,11 +406,27 @@ const TherapistManagement = () => {
                   <p className="text-sm text-muted uppercase tracking-[1px]">On Leave</p>
                   <p className="text-3xl font-semibold mt-3">{therapistsOnLeaveToday}</p>
                 </div>
-                <div className="stats-card">
-                  <p className="text-sm text-muted uppercase tracking-[1px]">Active Sessions</p>
-                  <p className="text-3xl font-semibold mt-3">{activeSessions}</p>
-                </div>
               </div>
+
+              <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
+                <label className="relative flex-1">
+                  <MaterialSymbol name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search therapist, specialization, or email..."
+                    className="w-full h-12 rounded-[18px] border border-primary/15 bg-white pl-12 pr-4 text-[14px] shadow-[0_8px_16px_rgba(31,77,62,0.06)]"
+                  />
+                </label>
+                <button
+                  onClick={() => setShowAddTherapist(true)}
+                  className="h-12 rounded-full bg-gradient-to-br from-primary to-accent text-white text-sm uppercase tracking-[1.2px] px-6 shadow-[0_18px_28px_rgba(31,77,62,0.28)] hover:scale-[1.02] transition-all"
+                >
+                  + Add New Therapist
+                </button>
+              </div>
+
               {/* Tab Navigation */}
               <div className="chip-row mb-6">
                 {[
@@ -471,58 +449,103 @@ const TherapistManagement = () => {
               <div className="bg-white rounded-2xl p-6 shadow-soft">
             {activeTab === 'details' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold">Therapist Details</h3>
-                  {!editingTherapist && (
-                    <button 
-                      onClick={() => setEditingTherapist(selectedTherapist)}
-                      className="h-10 rounded-full bg-primary px-4 text-sm uppercase tracking-[1.2px] text-white hover:brightness-110"
-                    >
-                      Edit Details
-                    </button>
-                  )}
-                </div>
-
-                {editingTherapist ? (
-                  <TherapistDetailsForm
-                    therapist={editingTherapist}
-                    onSave={handleUpdateTherapistDetails}
-                    onCancel={() => setEditingTherapist(null)}
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-4">
+                <div className="grid gap-6 lg:grid-cols-[1.15fr_1.4fr]">
+                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-sm text-muted uppercase tracking-[1px]">Full Name</p>
-                        <p className="font-medium">{selectedTherapist.name}</p>
+                        <p className="text-sm text-muted uppercase tracking-[1px]">Therapists</p>
+                        <h4 className="text-lg font-semibold">Available team</h4>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted uppercase tracking-[1px]">Phone Number</p>
-                        <p className="font-medium">{selectedTherapist.phone}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted uppercase tracking-[1px]">Email Address</p>
-                        <p className="font-medium">{selectedTherapist.email}</p>
-                      </div>
+                      <span className="text-sm text-muted">Showing {filteredTherapists.length} of {totalTherapists}</span>
                     </div>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted uppercase tracking-[1px]">Specialization</p>
-                        <p className="font-medium">{selectedTherapist.specialization}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted uppercase tracking-[1px]">Experience</p>
-                        <p className="font-medium">{selectedTherapist.experience} years</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted uppercase tracking-[1px]">Profile Photo</p>
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold text-xl">
-                          {selectedTherapist.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                      </div>
+                    <div className="space-y-3">
+                      {filteredTherapists.length > 0 ? (
+                        filteredTherapists.map(therapist => (
+                          <button
+                            key={therapist.id}
+                            type="button"
+                            onClick={() => setSelectedTherapist(therapist)}
+                            className={`w-full text-left flex items-center justify-between gap-4 rounded-2xl border p-4 transition ${selectedTherapist.id === therapist.id ? 'border-primary/15 bg-white shadow-soft' : 'border-transparent bg-white/80 hover:bg-white'}`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold">
+                                {therapist.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <div>
+                                <p className="font-medium">{therapist.name}</p>
+                                <p className="text-sm text-muted">{therapist.specialization}</p>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted">No therapists match your search.</p>
+                      )}
                     </div>
                   </div>
-                )}
+
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold">Therapist Details</h3>
+                        <p className="text-sm text-muted">Selected profile and summary data appear here.</p>
+                      </div>
+                      {!editingTherapist && (
+                        <button 
+                          onClick={() => setEditingTherapist(selectedTherapist)}
+                          className="h-10 rounded-full bg-primary px-4 text-sm uppercase tracking-[1.2px] text-white hover:brightness-110"
+                        >
+                          Edit Details
+                        </button>
+                      )}
+                    </div>
+
+                    {editingTherapist ? (
+                      <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                        <TherapistDetailsForm
+                          therapist={editingTherapist}
+                          onSave={handleUpdateTherapistDetails}
+                          onCancel={() => setEditingTherapist(null)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-sm text-muted uppercase tracking-[1px]">Full Name</p>
+                              <p className="font-medium">{selectedTherapist.name}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted uppercase tracking-[1px]">Phone Number</p>
+                              <p className="font-medium">{selectedTherapist.phone}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted uppercase tracking-[1px]">Email Address</p>
+                              <p className="font-medium">{selectedTherapist.email}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-sm text-muted uppercase tracking-[1px]">Specialization</p>
+                              <p className="font-medium">{selectedTherapist.specialization}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted uppercase tracking-[1px]">Experience</p>
+                              <p className="font-medium">{selectedTherapist.experience} years</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted uppercase tracking-[1px]">Profile Photo</p>
+                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-semibold text-xl">
+                                {selectedTherapist.name.split(' ').map(n => n[0]).join('')}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -845,11 +868,20 @@ const TherapistManagement = () => {
                 </div>
               </div>
             )}
-              </div>
-            </>
-          )}
+          </div>
         </div>
       </div>
+
+      {showAddTherapist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-6">
+          <div className="w-full max-w-3xl rounded-[32px] bg-slate-50 p-6 shadow-[0_40px_90px_rgba(31,77,62,0.18)]">
+            <AddTherapistForm
+              onSave={handleAddTherapist}
+              onClose={() => setShowAddTherapist(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

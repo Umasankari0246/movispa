@@ -3,6 +3,7 @@ import './App.css'
 import AppointmentsView from './frontend/AppointmentsPage.jsx'
 import ClientsView from './frontend/clients.jsx'
 import TherapistManagement from './frontend/TherapistManagement.jsx'
+import SettingsView from './frontend/SettingsView.jsx'
 import MaterialSymbol from './components/MaterialSymbol.jsx'
 import heroImage from './assets/hero.png'
 
@@ -63,6 +64,10 @@ const VIEW_META = {
   offers: {
     title: 'Signature Packages',
     subtitle: 'Limited availability for seasonal rituals and retreats.',
+  },
+  settings: {
+    title: 'Settings',
+    subtitle: 'Configure spa business rules and notifications.',
   },
 }
 
@@ -364,9 +369,17 @@ function AppShell({ view, onNav, clients, setClients }) {
         </nav>
 
         <div className="sidebar-footer">
-          <button type="button" className="settings-row">
+          <button
+            type="button"
+            className={`settings-row${view === 'settings' ? ' is-active' : ''}`}
+            onClick={() => onNav('settings')}
+          >
             <span className="settings-icon icon-crest icon-crest--muted icon-crest--compact">
-              <MaterialSymbol name="settings" className="text-[16px]" />
+              <MaterialSymbol
+                name="settings"
+                className="text-[16px]"
+                filled={view === 'settings'}
+              />
             </span>
             <span className="settings-label">Settings</span>
           </button>
@@ -409,6 +422,7 @@ function AppShell({ view, onNav, clients, setClients }) {
         {view === 'clients' && <ClientsView clients={clients} setClients={setClients} />}
         {view === 'appointments' && <AppointmentsView clients={clients} setClients={setClients} />}
         {view === 'offers' && <OffersView />}
+        {view === 'settings' && <SettingsView />}
       </main>
     </div>
   )
