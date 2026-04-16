@@ -3,13 +3,10 @@ import MaterialSymbol from '../components/MaterialSymbol.jsx'
 
 export default function ClientsView({ clients, setClients }) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [selectedTier, setSelectedTier] = useState('all')
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState(null)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [editingClient, setEditingClient] = useState(null)
-  const [notification, setNotification] = useState(null)
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
@@ -20,28 +17,69 @@ export default function ClientsView({ clients, setClients }) {
     status: 'Active',
   })
 
-  const filteredClients = clients.filter(client => {
+  const tierOptions = [
+    { id: 'all', label: 'All Clients' },
+    { id: 'diamond', label: 'Diamond' },
+    { id: 'gold', label: 'Gold' },
+    { id: 'silver', label: 'Silver' },
+  ]
+
+  const tierPalette = ['Diamond Elite', 'Gold Member', 'Silver Member']
+
+  const resolveTierLabel = (client, index) => {
+    if (client.membership) {
+      return client.membership
+    }
+    return tierPalette[index % tierPalette.length]
+  }
+
+  const resolveTierId = (label) => {
+    const normalized = String(label || '').toLowerCase()
+    if (normalized.includes('diamond')) return 'diamond'
+    if (normalized.includes('gold')) return 'gold'
+    if (normalized.includes('silver')) return 'silver'
+    return 'diamond'
+  }
+
+  const formatDate = (value) => {
+    if (!value) return '—'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  const clientsWithMeta = clients.map((client, index) => {
+    const membership = resolveTierLabel(client, index)
+    const membershipKey = resolveTierId(membership)
+    const latestVisit = client.appointmentHistory?.[0]
+    const lastVisitDate = formatDate(latestVisit?.date)
+    const lastVisitService = latestVisit?.service || client.preferences || '—'
+    return {
+      ...client,
+      membership,
+      membershipKey,
+      lastVisitDate,
+      lastVisitService,
+      listIndex: index,
+    }
+  })
+
+  const filteredClients = clientsWithMeta.filter((client) => {
     const matchesSearch = searchTerm === '' ||
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm)
-    const matchesFilter = filterStatus === 'all' || client.status.toLowerCase() === filterStatus.toLowerCase()
-    return matchesSearch && matchesFilter
+      client.phone.includes(searchTerm) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesTier = selectedTier === 'all' || client.membershipKey === selectedTier
+    return matchesSearch && matchesTier
   })
 
   const handleViewClient = (client) => {
     setSelectedClient(client)
     setIsViewModalOpen(true)
-  }
-
-  const handleEditClient = (client) => {
-    setEditingClient(client)
-    setIsEditModalOpen(true)
-  }
-
-  const handleDeleteClient = (clientId) => {
-    if (window.confirm('Are you sure you want to delete this client?')) {
-      setClients(clients.filter(c => c.id !== clientId))
-    }
   }
 
   const handleAddClient = () => {
@@ -55,117 +93,131 @@ export default function ClientsView({ clients, setClients }) {
     setIsAddModalOpen(false)
   }
 
-  const handleSaveEditClient = () => {
-    setClients(clients.map(c => c.id === editingClient.id ? editingClient : c))
-    setIsEditModalOpen(false)
-    setEditingClient(null)
-  }
-
   return (
     <div className="view-body clients-view">
-      <div className="mb-6">
-        <div>
-          <h3 className="text-[28px] font-semibold">Clients</h3>
-          <p className="text-sm text-muted">Manage client information and records.</p>
+      <header className="clients-header">
+        <div className="clients-header-left">
+          <h2 className="clients-title">Clients</h2>
         </div>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
+        <div className="clients-header-right">
+          <div className="clients-search">
+            <MaterialSymbol name="search" className="text-[18px]" />
             <input
               type="text"
-              placeholder="Search by name or phone..."
+              placeholder="Search client directory..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-300 bg-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
             />
-            <MaterialSymbol name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-gray-400" />
+          </div>
+          <div className="clients-icon-row">
+            <button type="button" className="icon-pill" aria-label="Calendar">
+              <MaterialSymbol name="calendar_month" className="text-[18px]" />
+            </button>
+            <button type="button" className="icon-pill" aria-label="Clock">
+              <MaterialSymbol name="schedule" className="text-[18px]" />
+            </button>
+            <button type="button" className="icon-pill" aria-label="Alerts">
+              <MaterialSymbol name="notifications" className="text-[18px]" />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-12 px-4 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <button
-            type="button"
-            className="rounded-full px-6 py-3 text-[13px] font-semibold uppercase tracking-[1px] text-white shadow-soft transition hover:brightness-110"
-            style={{ backgroundColor: '#1f4d3e' }}
-            onClick={handleAddClient}
-          >
-            + Add Client
+      </header>
+
+      <section className="clients-toolbar">
+        <div className="tier-group">
+          <p className="tier-label">Membership Tier</p>
+          <div className="tier-chips">
+            {tierOptions.map((tier) => (
+              <button
+                key={tier.id}
+                type="button"
+                className={`tier-chip${selectedTier === tier.id ? ' is-active' : ''}`}
+                onClick={() => setSelectedTier(tier.id)}
+              >
+                {tier.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="clients-actions">
+          <button type="button" className="ghost-button">
+            <MaterialSymbol name="tune" className="text-[16px]" />
+            More Filters
+          </button>
+          <button type="button" className="primary-button" onClick={handleAddClient}>
+            <MaterialSymbol name="person_add" className="text-[18px]" />
+            New Client
           </button>
         </div>
-      </div>
+      </section>
 
-      {/* Clients Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{client.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      client.status === 'Active' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {client.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        className="text-gray-600 hover:text-blue-600 transition-colors"
-                        title="View"
-                        onClick={() => handleViewClient(client)}
-                      >
-                        <MaterialSymbol name="visibility" className="text-[20px]" />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-gray-600 hover:text-blue-600 transition-colors"
-                        title="Edit"
-                        onClick={() => handleEditClient(client)}
-                      >
-                        <MaterialSymbol name="edit_square" className="text-[20px]" />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-gray-600 hover:text-red-600 transition-colors"
-                        title="Delete"
-                        onClick={() => handleDeleteClient(client.id)}
-                      >
-                        <MaterialSymbol name="delete" className="text-[20px]" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="clients-card">
+        <div className="clients-table-head">
+          <span>Client Name</span>
+          <span>Contact Info</span>
+          <span>Last Visit</span>
+          <span>Membership</span>
+          <span>Actions</span>
         </div>
-      </div>
+        <div className="clients-table-body">
+          {filteredClients.map((client) => (
+            <div className="clients-row" key={client.id}>
+              <div className="client-cell client-name-cell">
+                <div className="client-avatar">
+                  {client.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="client-name">{client.name}</p>
+                  <p className="client-id">ID: MS-{String(client.id).padStart(4, '0')}</p>
+                </div>
+              </div>
+              <div className="client-cell">
+                <p className="client-main">{client.phone}</p>
+                <p className="client-sub">{client.email}</p>
+              </div>
+              <div className="client-cell">
+                <p className="client-main">{client.lastVisitDate}</p>
+                <p className="client-sub">{client.lastVisitService}</p>
+              </div>
+              <div className="client-cell">
+                <span className={`tier-badge ${client.membershipKey}`}>
+                  {client.membership}
+                </span>
+              </div>
+              <div className="client-cell client-actions">
+                <button
+                  type="button"
+                  className="clients-icon-button"
+                  aria-label="More actions"
+                  onClick={() => handleViewClient(client)}
+                >
+                  <MaterialSymbol name="more_horiz" className="text-[18px]" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="clients-footer">
+          <p>Showing 1 to {Math.min(filteredClients.length, 10)} of {filteredClients.length} clients</p>
+          <div className="pagination">
+            <button type="button" className="page-arrow" aria-label="Previous">
+              <MaterialSymbol name="chevron_left" className="text-[18px]" />
+            </button>
+            {[1, 2, 3].map((page) => (
+              <button
+                key={page}
+                type="button"
+                className={`page-number${page === 1 ? ' is-active' : ''}`}
+              >
+                {page}
+              </button>
+            ))}
+            <button type="button" className="page-arrow" aria-label="Next">
+              <MaterialSymbol name="chevron_right" className="text-[18px]" />
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* View Client Modal */}
       {isViewModalOpen && selectedClient && (
@@ -230,169 +282,114 @@ export default function ClientsView({ clients, setClients }) {
       )}
 
       {/* Edit Client Modal */}
-      {isEditModalOpen && editingClient && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Edit Client</h3>
-              <button
-                type="button"
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => setIsEditModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveEditClient(); }}>
-              <div className="space-y-4">
-                <label className="block text-sm text-slate-800">
-                  Name
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.name}
-                    onChange={(e) => setEditingClient({ ...editingClient, name: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Email
-                  <input
-                    type="email"
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.email}
-                    onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Phone
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.phone}
-                    onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Address
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.address}
-                    onChange={(e) => setEditingClient({ ...editingClient, address: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Age
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.age}
-                    onChange={(e) => setEditingClient({ ...editingClient, age: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Preferences
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.preferences}
-                    onChange={(e) => setEditingClient({ ...editingClient, preferences: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Status
-                  <select
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={editingClient.status}
-                    onChange={(e) => setEditingClient({ ...editingClient, status: e.target.value })}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </label>
-                <button
-                  type="submit"
-                  className="w-full h-12 rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Add Client Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Add New Client</h3>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6">
+          <div className="client-modal">
+            <header className="client-modal-header">
+              <div>
+                <p className="client-modal-breadcrumb">Clients / Registration</p>
+                <h3 className="client-modal-title">New Client Registration</h3>
+                <p className="client-modal-subtitle">
+                  Create a personalized profile for a new guest in the Sanctuary ecosystem.
+                </p>
+              </div>
               <button
                 type="button"
-                className="text-gray-400 hover:text-gray-600"
+                className="client-modal-close"
                 onClick={() => setIsAddModalOpen(false)}
+                aria-label="Close"
               >
                 ✕
               </button>
+            </header>
+            <div className="client-modal-card">
+              <div className="client-modal-divider"></div>
+              <form
+                className="client-modal-grid"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleSaveNewClient()
+                }}
+              >
+                <section className="client-modal-section">
+                  <h4>Personal Details</h4>
+                  <label>
+                    Full Name
+                    <input
+                      value={newClient.name}
+                      onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Phone Number
+                    <input
+                      value={newClient.phone}
+                      onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Email Address
+                    <input
+                      type="email"
+                      value={newClient.email}
+                      onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                      required
+                    />
+                  </label>
+                  <div className="client-modal-radio">
+                    <p>Preferred Contact Method</p>
+                    <label>
+                      <input type="radio" name="contact" defaultChecked />
+                      Email
+                    </label>
+                    <label>
+                      <input type="radio" name="contact" />
+                      SMS
+                    </label>
+                  </div>
+                </section>
+
+                <section className="client-modal-section">
+                  <h4>Account Configuration</h4>
+                  <p className="client-modal-field">Membership Tier</p>
+                  <div className="tier-grid">
+                    {[
+                      { id: 'silver', label: 'Silver', note: 'Essential Serenity', icon: 'spa' },
+                      { id: 'gold', label: 'Gold', note: 'Elevated Wellness', icon: 'workspace_premium' },
+                      { id: 'platinum', label: 'Platinum', note: 'Absolute Luxury', icon: 'diamond' },
+                      { id: 'custom', label: 'Custom', note: 'Bespoke Rituals', icon: 'auto_awesome' },
+                    ].map((tier) => (
+                      <button key={tier.id} type="button" className="tier-card">
+                        <span className="tier-card-icon">
+                          <MaterialSymbol name={tier.icon} className="text-[18px]" />
+                        </span>
+                        <strong>{tier.label}</strong>
+                        <span>{tier.note}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <label className="client-modal-textarea">
+                    Appointment Notes & Preferences
+                    <textarea
+                      rows={4}
+                      value={newClient.preferences}
+                      onChange={(e) => setNewClient({ ...newClient, preferences: e.target.value })}
+                    />
+                  </label>
+                </section>
+                <div className="client-modal-actions">
+                  <button type="button" className="ghost-button" onClick={() => setIsAddModalOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="primary-button">
+                    Create Client
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveNewClient(); }}>
-              <div className="space-y-4">
-                <label className="block text-sm text-slate-800">
-                  Name
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={newClient.name}
-                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                    required
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Email
-                  <input
-                    type="email"
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={newClient.email}
-                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                    required
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Phone
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={newClient.phone}
-                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                    required
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Address
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={newClient.address}
-                    onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Age
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={newClient.age}
-                    onChange={(e) => setNewClient({ ...newClient, age: e.target.value })}
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Preferences
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={newClient.preferences}
-                    onChange={(e) => setNewClient({ ...newClient, preferences: e.target.value })}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="w-full h-12 rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition"
-                >
-                  Add Client
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

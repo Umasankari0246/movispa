@@ -5,18 +5,45 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import ServicesPage from './pages/ServicesPage.jsx'
 import TherapistsPage from './pages/TherapistsPage.jsx'
 import ClientsPage from './pages/ClientsPage.jsx'
+import StaffPage from './pages/StaffPage.jsx'
+import RoomsPage from './pages/RoomsPage.jsx'
+import AnalyticsPage from './pages/AnalyticsPage.jsx'
+import InsightsPage from './pages/InsightsPage.jsx'
 import AppointmentsPage from './pages/AppointmentsPage.jsx'
 import OffersPage from './pages/OffersPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 
-const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { id: 'services', label: 'Services', icon: 'spa' },
-  { id: 'therapists', label: 'Therapists', icon: 'person' },
-  { id: 'clients', label: 'Clients', icon: 'groups' },
-  { id: 'appointments', label: 'Appointments', icon: 'calendar_month' },
-  { id: 'offers', label: 'Offers', icon: 'sell' },
+const NAV_SECTIONS = [
+  {
+    title: 'Overview',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+      { id: 'clients', label: 'Clients', icon: 'groups' },
+      { id: 'therapists', label: 'Therapist', icon: 'medical_services' },
+      { id: 'staff', label: 'Staff', icon: 'badge' },
+      { id: 'rooms', label: 'Rooms', icon: 'meeting_room' },
+    ],
+  },
+  {
+    title: 'Experience',
+    items: [
+      { id: 'appointments', label: 'Appointment', icon: 'event' },
+    ],
+  },
+  {
+    title: 'Intelligence',
+    items: [
+      { id: 'analytics', label: 'Analytics', icon: 'monitoring' },
+      { id: 'insights', label: 'AI Insights', icon: 'auto_awesome' },
+    ],
+  },
+  {
+    title: 'System',
+    items: [
+      { id: 'settings', label: 'Settings', icon: 'settings' },
+    ],
+  },
 ]
 
 const VIEW_META = {
@@ -37,8 +64,24 @@ const VIEW_META = {
     subtitle: '',
   },
   clients: {
-    title: 'Client Management',
-    subtitle: 'View client profiles, bookings, and loyalty details.',
+    title: '',
+    subtitle: '',
+  },
+  staff: {
+    title: '',
+    subtitle: '',
+  },
+  rooms: {
+    title: '',
+    subtitle: '',
+  },
+  analytics: {
+    title: '',
+    subtitle: '',
+  },
+  insights: {
+    title: '',
+    subtitle: '',
   },
   offers: {
     title: 'Signature Packages',
@@ -51,7 +94,10 @@ const VIEW_META = {
 }
 
 function App() {
-  const [view, setView] = useState('login')
+  const [view, setView] = useState(() => {
+    const token = window.localStorage.getItem('access_token')
+    return token ? 'dashboard' : 'login'
+  })
   const [clients, setClients] = useState([
     {
       id: 1,
@@ -115,9 +161,10 @@ function App() {
 function AppShell({ view, onNav, clients, setClients }) {
   const meta = VIEW_META[view]
   const [collapsed, setCollapsed] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const showTopbarText = Boolean(meta.title || meta.subtitle)
-  const showTopbarActions = view === 'dashboard'
-  const showTopbar = showTopbarText || showTopbarActions
+  const isDashboard = view === 'dashboard'
+  const showTopbar = showTopbarText || isDashboard
 
   return (
     <div className={`app-shell view-${view}${collapsed ? ' is-collapsed' : ''}`}>
@@ -128,7 +175,7 @@ function AppShell({ view, onNav, clients, setClients }) {
           </div>
           <div className="brand-text">
             <p className="brand-name">Movi Cloud Spa</p>
-            <p className="brand-tagline">Zen-modern spa</p>
+            <p className="brand-tagline">Relax. Refresh. Renew.</p>
           </div>
           <button
             type="button"
@@ -141,46 +188,51 @@ function AppShell({ view, onNav, clients, setClients }) {
         </div>
 
         <nav className="sidebar-nav" aria-label="Primary">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`nav-item${view === item.id ? ' is-active' : ''}`}
-              onClick={() => onNav(item.id)}
-            >
-              <span className="nav-icon icon-crest icon-crest--muted icon-crest--compact">
-                <MaterialSymbol
-                  name={item.icon}
-                  className="text-[20px]"
-                  filled={view === item.id}
-                />
-              </span>
-              <span className="nav-label">{item.label}</span>
-            </button>
+          {NAV_SECTIONS.map((section) => (
+            <div className="nav-section" key={section.title}>
+              <p className="nav-section-title">{section.title}</p>
+              {section.items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`nav-item${view === item.id ? ' is-active' : ''}${
+                    item.disabled ? ' is-disabled' : ''
+                  }`}
+                  disabled={item.disabled}
+                  onClick={() => {
+                    if (!item.disabled) {
+                      onNav(item.id)
+                    }
+                  }}
+                >
+                  <span className="nav-icon icon-crest icon-crest--muted icon-crest--compact">
+                    <MaterialSymbol
+                      name={item.icon}
+                      className="text-[20px]"
+                      filled={view === item.id}
+                    />
+                  </span>
+                  <span className="nav-label">{item.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          <button
-            type="button"
-            className={`settings-row${view === 'settings' ? ' is-active' : ''}`}
-            onClick={() => onNav('settings')}
-          >
-            <span className="settings-icon icon-crest icon-crest--muted icon-crest--compact">
-              <MaterialSymbol
-                name="settings"
-                className="text-[16px]"
-                filled={view === 'settings'}
-              />
-            </span>
-            <span className="settings-label">Settings</span>
-          </button>
           <div className="user-pill">
-            <div className="avatar" aria-hidden="true"></div>
-            <div>
-              <p>Elena Rose</p>
-              <span>Gold Member</span>
-            </div>
+            <button
+              type="button"
+              className="user-pill-main"
+              onClick={() => setIsProfileOpen(true)}
+              aria-label="Open profile"
+            >
+              <div className="avatar" aria-hidden="true"></div>
+              <div>
+                <p>Admin Name</p>
+                <span>admin@movi.spa</span>
+              </div>
+            </button>
             <button
               type="button"
               className="logout-button"
@@ -198,23 +250,40 @@ function AppShell({ view, onNav, clients, setClients }) {
 
       <main className="app-main">
         {showTopbar && (
-          <header className="topbar">
-            {showTopbarText && (
-              <div>
-                <p className="topbar-title">{meta.title}</p>
-                <p className="topbar-sub">{meta.subtitle}</p>
-              </div>
-            )}
-            {showTopbarActions && (
-              <div className="topbar-actions">
-                <button
-                  type="button"
-                  className="icon-pill icon-crest icon-crest--muted"
-                  aria-label="Alerts"
-                >
-                  <MaterialSymbol name="notifications" className="text-[20px]" />
-                </button>
-              </div>
+          <header className={`topbar${isDashboard ? ' dashboard-topbar' : ''}`}>
+            {isDashboard ? (
+              <>
+                <div className="topbar-left">
+                  <p className="topbar-title">Dashboard</p>
+                  <span className="topbar-pill">Overview</span>
+                </div>
+                <div className="topbar-right">
+                  <div className="topbar-search">
+                    <MaterialSymbol name="search" className="text-[18px]" />
+                    <input
+                      type="text"
+                      placeholder="Search appointments or clients..."
+                      aria-label="Search"
+                    />
+                  </div>
+                  <button type="button" className="icon-pill" aria-label="Calendar">
+                    <MaterialSymbol name="calendar_month" className="text-[18px]" />
+                  </button>
+                  <button type="button" className="icon-pill" aria-label="Clock">
+                    <MaterialSymbol name="schedule" className="text-[18px]" />
+                  </button>
+                  <button type="button" className="icon-pill" aria-label="Alerts">
+                    <MaterialSymbol name="notifications" className="text-[18px]" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              showTopbarText && (
+                <div>
+                  <p className="topbar-title">{meta.title}</p>
+                  <p className="topbar-sub">{meta.subtitle}</p>
+                </div>
+              )
             )}
           </header>
         )}
@@ -222,6 +291,10 @@ function AppShell({ view, onNav, clients, setClients }) {
         {view === 'dashboard' && <DashboardPage />}
         {view === 'services' && <ServicesPage />}
         {view === 'therapists' && <TherapistsPage />}
+        {view === 'staff' && <StaffPage />}
+        {view === 'rooms' && <RoomsPage />}
+        {view === 'analytics' && <AnalyticsPage />}
+        {view === 'insights' && <InsightsPage />}
         {view === 'clients' && <ClientsPage clients={clients} setClients={setClients} />}
         {view === 'appointments' && (
           <AppointmentsPage clients={clients} setClients={setClients} />
@@ -229,6 +302,132 @@ function AppShell({ view, onNav, clients, setClients }) {
         {view === 'offers' && <OffersPage />}
         {view === 'settings' && <SettingsPage />}
       </main>
+
+      {isProfileOpen && (
+        <div className="profile-modal-overlay">
+          <div className="profile-modal">
+            <div className="profile-modal-header">
+              <div>
+                <h3>Profile Information</h3>
+                <p>Manage your profile identity and admin credentials.</p>
+              </div>
+              <button type="button" className="profile-save">Save Changes</button>
+            </div>
+
+            <section className="profile-card">
+              <div className="profile-card-top">
+                <div className="profile-avatar"></div>
+                <div>
+                  <p className="profile-name">Profile Photo</p>
+                  <span className="profile-meta">PNG, JPG up to 10MB</span>
+                  <div className="profile-actions">
+                    <button type="button" className="link-button">Update</button>
+                    <button type="button" className="link-button danger">Remove</button>
+                  </div>
+                </div>
+              </div>
+              <div className="profile-grid">
+                <label>
+                  Full Name
+                  <input type="text" defaultValue="Julian Montgomery" />
+                </label>
+                <label>
+                  Email Address
+                  <input type="email" defaultValue="julian@movi.spa" />
+                </label>
+                <label>
+                  Role
+                  <input type="text" defaultValue="Lead Administrator" />
+                </label>
+                <label>
+                  Time Zone
+                  <select defaultValue="GMT +5:30 Eastern Time">
+                    <option>GMT +5:30 Eastern Time</option>
+                    <option>GMT +1:00 Central Europe</option>
+                    <option>GMT -5:00 Eastern Time</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            <section className="profile-card">
+              <div className="profile-section-head">
+                <h4>Spa Operations</h4>
+                <p>Customize the environment and booking rules for your sanctuary.</p>
+              </div>
+              <div className="profile-toggle-row">
+                <div>
+                  <h5>AI Treatment Recommendations</h5>
+                  <span>Suggest rituals based on client history and profile.</span>
+                </div>
+                <button type="button" className="toggle is-on">
+                  <span></span>
+                </button>
+              </div>
+              <div className="profile-toggle-row">
+                <div>
+                  <h5>Automatic Waitlist</h5>
+                  <span>Notify VIP tiers immediately when a slot opens up.</span>
+                </div>
+                <button type="button" className="toggle is-on">
+                  <span></span>
+                </button>
+              </div>
+              <div className="profile-toggle-row">
+                <div>
+                  <h5>Ambient Audio Integration</h5>
+                  <span>Currently playing: Morning Spa (Acoustic Playlist)</span>
+                </div>
+                <button type="button" className="ghost-button">Configure</button>
+              </div>
+            </section>
+
+            <section className="profile-card">
+              <div className="profile-section-head">
+                <h4>Notification Channels</h4>
+                <p>How would you like to stay connected?</p>
+              </div>
+              <div className="notification-grid">
+                <div className="notification-head">
+                  <span>Notification Type</span>
+                  <span>Push</span>
+                  <span>Email</span>
+                  <span>SMS</span>
+                </div>
+                {[
+                  'New Bookings',
+                  'Cancellations',
+                  'Inventory Alerts',
+                ].map((item) => (
+                  <div className="notification-row" key={item}>
+                    <span>{item}</span>
+                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" />
+                    <input type="checkbox" />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="profile-card danger-zone">
+              <div>
+                <h4>Danger Zone</h4>
+                <p>Permanently delete your account and all spa data.</p>
+              </div>
+              <button type="button" className="ghost-button danger">Delete Account</button>
+            </section>
+
+            <button
+              type="button"
+              className="profile-modal-close"
+              aria-label="Close"
+              onClick={() => setIsProfileOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,110 +1,111 @@
 import MaterialSymbol from '../components/MaterialSymbol.jsx'
-import heroImage from '../assets/hero.png'
 
 export default function DashboardPage() {
+  const metricCards = [
+    {
+      label: 'Total Clients',
+      value: '1,284',
+      delta: '+12% vs LY',
+      icon: 'groups',
+    },
+    {
+      label: 'Today Appointments',
+      value: '42',
+      delta: 'Active Today',
+      icon: 'event_available',
+    },
+    {
+      label: 'Active Therapists',
+      value: '18 / 24',
+      delta: 'On-shift',
+      icon: 'medical_services',
+    },
+    {
+      label: 'Room Usage',
+      value: '85%',
+      delta: '',
+      icon: 'meeting_room',
+    },
+  ]
+
   return (
     <div className="view-body dashboard-view">
-      <section className="dashboard-grid">
-        <article className="feature-card primary">
-          <span className="tag">
-            <MaterialSymbol name="event" className="text-[12px]" />
-            Next appointment
-          </span>
-          <div className="feature-content">
-            <div>
-              <h3>Swedish Massage Therapy</h3>
-              <div className="feature-meta">
-                <div className="info-item">
-                  <span className="info-icon icon-crest icon-crest--muted icon-crest--compact">
-                    <MaterialSymbol name="schedule" className="text-[16px]" />
-                  </span>
-                  <div>
-                    <p className="info-label">Time</p>
-                    <p className="info-value">Tomorrow, 10:00 AM</p>
-                  </div>
-                </div>
-                <div className="info-item">
-                  <span className="info-icon icon-crest icon-crest--muted icon-crest--compact">
-                    <MaterialSymbol name="medical_services" className="text-[16px]" />
-                  </span>
-                  <div>
-                    <p className="info-label">Therapist</p>
-                    <p className="info-value">Marcus Thorne</p>
-                  </div>
-                </div>
-              </div>
-              <div className="pill-row">
-                <button type="button" className="pill">Reschedule</button>
-                <button type="button" className="pill ghost">Details</button>
-              </div>
+      <section className="dashboard-metrics">
+        {metricCards.map((card) => (
+          <article className="metric-card" key={card.label}>
+            <div className="metric-card-top">
+              <span className="metric-icon-pill">
+                <MaterialSymbol name={card.icon} className="text-[18px]" />
+              </span>
+              {card.delta && <span className="metric-delta">{card.delta}</span>}
             </div>
-            <div className="feature-media">
-              <img
-                src={heroImage}
-                alt="Spa wellness setup"
-                className="feature-media-image"
-              />
+            <div className="metric-card-body">
+              <p className="metric-value">{card.value}</p>
+              <p className="metric-label">{card.label}</p>
             </div>
-          </div>
-        </article>
-        <aside className="insight-card">
-          <p className="insight-title">Wellness insight</p>
-          <div className="insight-meter">
-            <div className="insight-meter-content">
-              <span>15h</span>
-              <small>Relaxation</small>
-            </div>
-          </div>
-          <p className="muted">80% towards your mindful goal.</p>
-        </aside>
+          </article>
+        ))}
       </section>
 
-      <section className="section">
-        <div className="section-head">
+      <section className="dashboard-panels">
+        <div className="panel-card panel-chart">
+          <div className="panel-header">
+            <div>
+              <h3>Appointment Trends</h3>
+              <p className="muted">Session volume over the last 30 days</p>
+            </div>
+            <div className="panel-tabs">
+              <button type="button" className="panel-tab is-active">Month</button>
+              <button type="button" className="panel-tab">Quarter</button>
+            </div>
+          </div>
+          <div className="chart-bars">
+            {[32, 48, 44, 62, 38, 82, 54, 40, 52, 66].map((height, index) => (
+              <span
+                key={`bar-${index}`}
+                className={`chart-bar${index === 5 ? ' is-highlight' : ''}`}
+                style={{ height: `${height}%` }}
+              ></span>
+            ))}
+          </div>
+          <div className="chart-labels">
+            <span>WK 1</span>
+            <span>WK 2</span>
+            <span>WK 3</span>
+            <span>WK 4</span>
+          </div>
+        </div>
+
+        <aside className="panel-card panel-revenue">
           <div>
-            <h4>Book Again</h4>
-            <p className="muted">Quick access to your favorite rituals.</p>
+            <h3>Monthly Revenue</h3>
+            <p className="muted">Service vs. Product Performance</p>
           </div>
-          <button type="button" className="link-button small">
-            View history
-          </button>
-        </div>
-        <div className="card-row">
-          <div className="ritual-card teal">
-            <div className="ritual-media face"></div>
-            <h5>Deep Hydration Facial</h5>
-            <span>Last visited: 2 weeks ago</span>
-            <button type="button" className="ritual-action">
-              <span className="ritual-action-icon icon-crest icon-crest--muted icon-crest--compact">
-                <MaterialSymbol name="autorenew" className="text-[14px]" />
-              </span>
-              Book Again
-            </button>
+          <div className="revenue-block">
+            <div className="revenue-row">
+              <span>Services</span>
+              <strong>$24,850</strong>
+            </div>
+            <div className="revenue-bar">
+              <span style={{ width: '78%' }}></span>
+            </div>
           </div>
-          <div className="ritual-card amber">
-            <div className="ritual-media stone"></div>
-            <h5>Volcanic Stone Ritual</h5>
-            <span>Last visited: 1 month ago</span>
-            <button type="button" className="ritual-action">
-              <span className="ritual-action-icon icon-crest icon-crest--muted icon-crest--compact">
-                <MaterialSymbol name="autorenew" className="text-[14px]" />
-              </span>
-              Book Again
-            </button>
+          <div className="revenue-block">
+            <div className="revenue-row">
+              <span>Retail</span>
+              <strong>$8,240</strong>
+            </div>
+            <div className="revenue-bar light">
+              <span style={{ width: '36%' }}></span>
+            </div>
           </div>
-          <div className="ritual-card mint highlight">
-            <div className="ritual-media float"></div>
-            <h5>Floating Sanctuary</h5>
-            <span>"Escape from gravity."</span>
-            <button type="button" className="ritual-action primary">
-              Book New
-            </button>
+          <div className="revenue-total">
+            <span>Total</span>
+            <strong>$33,090</strong>
           </div>
-        </div>
+          <div className="revenue-watermark"></div>
+        </aside>
       </section>
-      <button type="button" className="fab" aria-label="Add">
-        <MaterialSymbol name="add" className="text-[24px]" />
-      </button>
     </div>
   )
 }

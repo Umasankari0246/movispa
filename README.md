@@ -1,6 +1,6 @@
 # MoviCloud Spa
 
-Luxury spa management web app built with React, Vite, Tailwind CSS, and a FastAPI backend. The project focuses on a premium wellness aesthetic with dashboard, services, therapists, appointments, clients, offers, and settings views.
+Luxury spa management web app built with React, Vite, Tailwind CSS, and a FastAPI backend. The project focuses on a premium wellness aesthetic with dashboard, services, therapists, appointments, clients, staff, rooms, analytics, AI insights, offers, and settings views.
 
 ## Tech Stack
 
@@ -28,6 +28,10 @@ Luxury spa management web app built with React, Vite, Tailwind CSS, and a FastAP
 - **Therapists**: View therapist profiles and specialties
 - **Appointments**: Complete booking system with management
 - **Clients**: Client profiles and history
+- **Staff**: Team overview and onboarding modal
+- **Rooms**: Room catalog with add-room modal
+- **Analytics**: Revenue and booking insights
+- **AI Insights**: Predictive wellness highlights and activity feed
 - **Offers**: Special packages and promotions
 - **Settings**: Business and notification settings
 
@@ -125,3 +129,6 @@ Set the frontend API base via `VITE_API_URL` if needed.
 - Added FastAPI + MongoDB backend with captcha login
 - Split pages into `src/pages` for better separation
 - Updated login to use API captcha and auth
+- Built Staff, Rooms, Analytics, and AI Insights pages
+- Added onboarding, add-room, and profile popups
+- Refined Clients page layout with membership filters
