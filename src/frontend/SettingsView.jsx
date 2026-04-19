@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import MaterialSymbol from '../components/MaterialSymbol.jsx'
+import { apiGet, apiPut } from '../api/apiClient.js'
 
 const defaultSettings = {
   spaInfo: {
@@ -48,7 +48,87 @@ const defaultSettings = {
   },
 }
 
-const STORAGE_KEY = 'movicloudspa_settings'
+const normalizeSettings = (data) => {
+  if (!data || typeof data !== 'object') return defaultSettings
+
+  const spaInfo = data.spaInfo || data.spa_info || {}
+  const workingHours = data.workingHours || data.working_hours || {}
+  const appointment = data.appointment || {}
+  const notifications = data.notifications || {}
+  const payment = data.payment || {}
+  const account = data.account || {}
+  const auth = data.auth || {}
+
+  return {
+    spaInfo: {
+      spaName: spaInfo.spaName ?? spaInfo.spa_name ?? defaultSettings.spaInfo.spaName,
+      address: spaInfo.address ?? defaultSettings.spaInfo.address,
+      contactNumber:
+        spaInfo.contactNumber ?? spaInfo.contact_number ?? defaultSettings.spaInfo.contactNumber,
+      email: spaInfo.email ?? defaultSettings.spaInfo.email,
+      logo: spaInfo.logo ?? defaultSettings.spaInfo.logo,
+    },
+    workingHours: {
+      openingTime:
+        workingHours.openingTime ??
+        workingHours.opening_time ??
+        defaultSettings.workingHours.openingTime,
+      closingTime:
+        workingHours.closingTime ??
+        workingHours.closing_time ??
+        defaultSettings.workingHours.closingTime,
+      days: workingHours.days ?? defaultSettings.workingHours.days,
+    },
+    appointment: {
+      slotDuration:
+        appointment.slotDuration ??
+        appointment.slot_duration ??
+        defaultSettings.appointment.slotDuration,
+      maxAppointmentsPerDay:
+        appointment.maxAppointmentsPerDay ??
+        appointment.max_appointments_per_day ??
+        defaultSettings.appointment.maxAppointmentsPerDay,
+      autoConfirmBooking:
+        appointment.autoConfirmBooking ??
+        appointment.auto_confirm_booking ??
+        defaultSettings.appointment.autoConfirmBooking,
+      bufferTime:
+        appointment.bufferTime ??
+        appointment.buffer_time ??
+        defaultSettings.appointment.bufferTime,
+    },
+    notifications: {
+      emailNotifications:
+        notifications.emailNotifications ??
+        notifications.email_notifications ??
+        defaultSettings.notifications.emailNotifications,
+      appointmentReminders:
+        notifications.appointmentReminders ??
+        notifications.appointment_reminders ??
+        defaultSettings.notifications.appointmentReminders,
+    },
+    payment: {
+      cash: payment.cash ?? defaultSettings.payment.cash,
+      upi: payment.upi ?? defaultSettings.payment.upi,
+      taxPercentage:
+        payment.taxPercentage ??
+        payment.tax_percentage ??
+        defaultSettings.payment.taxPercentage,
+      discountPercentage:
+        payment.discountPercentage ??
+        payment.discount_percentage ??
+        defaultSettings.payment.discountPercentage,
+    },
+    account: {
+      name: account.name ?? defaultSettings.account.name,
+      email: account.email ?? defaultSettings.account.email,
+      phone: account.phone ?? defaultSettings.account.phone,
+    },
+    auth: {
+      password: auth.password ?? defaultSettings.auth.password,
+    },
+  }
+}
 
 export default function SettingsView() {
   const [settings, setSettings] = useState(defaultSettings)
@@ -73,12 +153,16 @@ export default function SettingsView() {
   const [passwordSuccess, setPasswordSuccess] = useState('')
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      setSettings(parsed)
-      setDraftSettings(parsed)
-    }
+    apiGet('/api/settings')
+      .then((data) => {
+        const normalized = normalizeSettings(data)
+        setSettings(normalized)
+        setDraftSettings(normalized)
+      })
+      .catch(() => {
+        setSettings(defaultSettings)
+        setDraftSettings(defaultSettings)
+      })
   }, [])
 
   useEffect(() => {
@@ -93,10 +177,12 @@ export default function SettingsView() {
     }
   }, [savedMessage, sectionMessage, passwordSuccess, passwordError])
 
-  const persistSettings = (updatedSettings) => {
-    setSettings(updatedSettings)
-    setDraftSettings(updatedSettings)
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSettings))
+  const persistSettings = async (updatedSettings) => {
+    const saved = await apiPut('/api/settings', updatedSettings)
+    const normalized = normalizeSettings(saved)
+    setSettings(normalized)
+    setDraftSettings(normalized)
+    return normalized
   }
 
   const startEdit = (section) => {
@@ -129,7 +215,7 @@ export default function SettingsView() {
     }))
   }
 
-  const saveSection = (section) => {
+  const saveSection = async (section) => {
     const sectionLabels = {
       spaInfo: 'Business Information',
       workingHours: 'Working Hours',
@@ -145,20 +231,25 @@ export default function SettingsView() {
       return
     }
 
-    persistSettings({
-      ...settings,
-      [section]: draftSettings[section],
-    })
-    setEditMode((prev) => ({ ...prev, [section]: false }))
-    setSavedMessage(`${sectionLabels[section]} saved successfully.`)
-    setSectionMessage('')
+    try {
+      await persistSettings({
+        ...settings,
+        [section]: draftSettings[section],
+      })
+      setEditMode((prev) => ({ ...prev, [section]: false }))
+      setSavedMessage(`${sectionLabels[section]} saved successfully.`)
+      setSectionMessage('')
+    } catch (error) {
+      setSectionMessage(error.message || 'Unable to save settings.')
+      setSavedMessage('')
+    }
   }
 
   const saveSpaInfo = () => {
     saveSection('spaInfo')
   }
 
-  const submitPasswordChange = () => {
+  const submitPasswordChange = async () => {
     if (!editMode.password) {
       setPasswordError('Click Edit before updating your password.')
       setPasswordSuccess('')
@@ -183,11 +274,16 @@ export default function SettingsView() {
         password: passwordForm.newPassword,
       },
     }
-    persistSettings(updated)
-    setEditMode((prev) => ({ ...prev, password: false }))
-    setPasswordSuccess('Password updated successfully.')
-    setPasswordError('')
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    try {
+      await persistSettings(updated)
+      setEditMode((prev) => ({ ...prev, password: false }))
+      setPasswordSuccess('Password updated successfully.')
+      setPasswordError('')
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    } catch (error) {
+      setPasswordError(error.message || 'Unable to update password.')
+      setPasswordSuccess('')
+    }
   }
 
   const currentWorkingHours = editMode.workingHours ? draftSettings.workingHours : settings.workingHours

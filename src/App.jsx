@@ -1,6 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import MaterialSymbol from './components/MaterialSymbol.jsx'
+import CalendarPopover from './components/CalendarPopover.jsx'
+import HistoryPopover from './components/HistoryPopover.jsx'
+import NotificationsPanel from './components/NotificationsPanel.jsx'
+import { apiGet } from './api/apiClient.js'
+import usePageHistory from './hooks/usePageHistory.js'
+import { filterByMonth } from './utils/dateFilter.js'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ServicesPage from './pages/ServicesPage.jsx'
 import TherapistsPage from './pages/TherapistsPage.jsx'
@@ -13,6 +19,7 @@ import AppointmentsPage from './pages/AppointmentsPage.jsx'
 import OffersPage from './pages/OffersPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
 
 const NAV_SECTIONS = [
   {
@@ -56,8 +63,8 @@ const VIEW_META = {
     subtitle: 'Experience our curated collection of restorative therapies.',
   },
   therapists: {
-    title: 'Expert Therapists',
-    subtitle: 'Guided by intuition, grounded in expertise.',
+    title: '',
+    subtitle: '',
   },
   appointments: {
     title: '',
@@ -91,6 +98,10 @@ const VIEW_META = {
     title: 'Settings',
     subtitle: 'Configure spa business rules and notifications.',
   },
+  profile: {
+    title: 'Profile',
+    subtitle: 'Manage account preferences and notification channels.',
+  },
 }
 
 function App() {
@@ -98,54 +109,20 @@ function App() {
     const token = window.localStorage.getItem('access_token')
     return token ? 'dashboard' : 'login'
   })
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: 'Sarah Jenkins',
-      email: 'sarah.jenkins@example.com',
-      phone: '+91 98765 43210',
-      status: 'Active',
-      address: '123 Wellness Lane, Sanctuary City',
-      age: '28',
-      preferences: 'Swedish Massage, Aromatherapy',
-      appointmentHistory: [
-        { date: '2024-04-10', service: 'Swedish Massage', status: 'Completed' },
-        { date: '2024-03-15', service: 'Aromatherapy', status: 'Completed' },
-      ],
-      paymentHistory: [
-        { date: '2024-04-10', amount: 1500, status: 'Paid' },
-        { date: '2024-03-15', amount: 1800, status: 'Paid' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Emily Johnson',
-      email: 'emily.johnson@example.com',
-      phone: '+91 98765 43211',
-      status: 'Active',
-      address: '456 Relaxation St, Calm Town',
-      age: '32',
-      preferences: 'Facial Treatments',
-      appointmentHistory: [
-        { date: '2024-04-05', service: 'Basic Facial', status: 'Completed' },
-      ],
-      paymentHistory: [
-        { date: '2024-04-05', amount: 800, status: 'Paid' },
-      ],
-    },
-    {
-      id: 3,
-      name: 'Marcus Chen',
-      email: 'marcus.chen@example.com',
-      phone: '+91 98765 43212',
-      status: 'Inactive',
-      address: '789 Serenity Blvd, Peace City',
-      age: '45',
-      preferences: 'Hair Services',
-      appointmentHistory: [],
-      paymentHistory: [],
-    },
-  ])
+  const [clients, setClients] = useState([])
+
+  useEffect(() => {
+    apiGet('/api/clients')
+      .then((data) => {
+        const normalized = (data || []).map((client) => ({
+          ...client,
+          appointmentHistory: client.appointmentHistory || client.appointment_history || [],
+          paymentHistory: client.paymentHistory || client.payment_history || [],
+        }))
+        setClients(normalized)
+      })
+      .catch(() => setClients([]))
+  }, [])
 
   if (view === 'login') {
     return <LoginPage onSignIn={() => setView('dashboard')} />
@@ -162,9 +139,63 @@ function AppShell({ view, onNav, clients, setClients }) {
   const meta = VIEW_META[view]
   const [collapsed, setCollapsed] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [dashboardSearch, setDashboardSearch] = useState('')
+  const [dashboardFilterDate, setDashboardFilterDate] = useState(null)
+  const [dashboardMonth, setDashboardMonth] = useState(() => new Date().getMonth())
+  const [dashboardYear, setDashboardYear] = useState(() => new Date().getFullYear())
+  const [isDashboardCalendarOpen, setIsDashboardCalendarOpen] = useState(false)
+  const [isDashboardHistoryOpen, setIsDashboardHistoryOpen] = useState(false)
   const showTopbarText = Boolean(meta.title || meta.subtitle)
   const isDashboard = view === 'dashboard'
   const showTopbar = showTopbarText || isDashboard
+
+  useEffect(() => {
+    apiGet('/api/notifications')
+      .then((data) => setNotifications(data || []))
+      .catch(() => setNotifications([]))
+  }, [])
+
+  useEffect(() => {
+    setIsNotificationsOpen(false)
+  }, [view])
+
+  const toggleNotifications = () => {
+    setIsNotificationsOpen((prev) => !prev)
+  }
+
+  const closeNotifications = () => {
+    setIsNotificationsOpen(false)
+  }
+
+  const filteredDashboardClients = dashboardSearch
+    ? clients.filter((client) =>
+        client.name.toLowerCase().includes(dashboardSearch.toLowerCase())
+      )
+    : []
+
+  const dashboardHistory = usePageHistory('dashboard', isDashboardHistoryOpen)
+  const filteredDashboardHistory = filterByMonth(
+    dashboardHistory,
+    dashboardFilterDate,
+    (item) => item.date
+  )
+
+  const shiftDashboardMonth = (delta) => {
+    const nextMonth = dashboardMonth + delta
+    if (nextMonth < 0) {
+      setDashboardMonth(11)
+      setDashboardYear((prev) => prev - 1)
+      return
+    }
+    if (nextMonth > 11) {
+      setDashboardMonth(0)
+      setDashboardYear((prev) => prev + 1)
+      return
+    }
+    setDashboardMonth(nextMonth)
+  }
 
   return (
     <div className={`app-shell view-${view}${collapsed ? ' is-collapsed' : ''}`}>
@@ -257,24 +288,95 @@ function AppShell({ view, onNav, clients, setClients }) {
                   <p className="topbar-title">Dashboard</p>
                   <span className="topbar-pill">Overview</span>
                 </div>
-                <div className="topbar-right">
+                <div className="topbar-right action-popover-anchor">
                   <div className="topbar-search">
                     <MaterialSymbol name="search" className="text-[18px]" />
                     <input
                       type="text"
                       placeholder="Search appointments or clients..."
                       aria-label="Search"
+                      value={dashboardSearch}
+                      onChange={(event) => setDashboardSearch(event.target.value)}
                     />
+                    {dashboardSearch && (
+                      <div className="topbar-search-results">
+                        {filteredDashboardClients.length === 0 ? (
+                          <span>No matching clients</span>
+                        ) : (
+                          filteredDashboardClients.map((client) => (
+                            <button
+                              type="button"
+                              key={client.id}
+                              onClick={() => {
+                                onNav('clients')
+                                setDashboardSearch('')
+                              }}
+                            >
+                              {client.name}
+                              <small>{client.email}</small>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <button type="button" className="icon-pill" aria-label="Calendar">
+                  <button
+                    type="button"
+                    className="icon-pill"
+                    aria-label="Calendar"
+                    onClick={() => {
+                      closeNotifications()
+                      setIsDashboardCalendarOpen((prev) => !prev)
+                      setIsDashboardHistoryOpen(false)
+                    }}
+                  >
                     <MaterialSymbol name="calendar_month" className="text-[18px]" />
                   </button>
-                  <button type="button" className="icon-pill" aria-label="Clock">
+                  <button
+                    type="button"
+                    className="icon-pill"
+                    aria-label="Clock"
+                    onClick={() => {
+                      closeNotifications()
+                      setIsDashboardHistoryOpen((prev) => !prev)
+                      setIsDashboardCalendarOpen(false)
+                    }}
+                  >
                     <MaterialSymbol name="schedule" className="text-[18px]" />
                   </button>
-                  <button type="button" className="icon-pill" aria-label="Alerts">
+                  <button
+                    type="button"
+                    className="icon-pill"
+                    aria-label="Alerts"
+                    onClick={toggleNotifications}
+                  >
                     <MaterialSymbol name="notifications" className="text-[18px]" />
                   </button>
+                  {isDashboardCalendarOpen && (
+                    <CalendarPopover
+                      selectedDate={dashboardFilterDate}
+                      month={dashboardMonth}
+                      year={dashboardYear}
+                      onPrev={() => shiftDashboardMonth(-1)}
+                      onNext={() => shiftDashboardMonth(1)}
+                      onSelectDate={(date) => {
+                        setDashboardFilterDate(date)
+                        setIsDashboardCalendarOpen(false)
+                      }}
+                      onClear={() => {
+                        setDashboardFilterDate(null)
+                        setIsDashboardCalendarOpen(false)
+                      }}
+                      onClose={() => setIsDashboardCalendarOpen(false)}
+                    />
+                  )}
+                  {isDashboardHistoryOpen && (
+                    <HistoryPopover
+                      title="Dashboard History"
+                      items={filteredDashboardHistory}
+                      onClose={() => setIsDashboardHistoryOpen(false)}
+                    />
+                  )}
                 </div>
               </>
             ) : (
@@ -288,19 +390,77 @@ function AppShell({ view, onNav, clients, setClients }) {
           </header>
         )}
 
-        {view === 'dashboard' && <DashboardPage />}
-        {view === 'services' && <ServicesPage />}
-        {view === 'therapists' && <TherapistsPage />}
-        {view === 'staff' && <StaffPage />}
-        {view === 'rooms' && <RoomsPage />}
-        {view === 'analytics' && <AnalyticsPage />}
-        {view === 'insights' && <InsightsPage />}
-        {view === 'clients' && <ClientsPage clients={clients} setClients={setClients} />}
-        {view === 'appointments' && (
-          <AppointmentsPage clients={clients} setClients={setClients} />
+        {isNotificationsOpen && (
+          <NotificationsPanel
+            items={notifications}
+            onClose={() => setIsNotificationsOpen(false)}
+          />
         )}
-        {view === 'offers' && <OffersPage />}
-        {view === 'settings' && <SettingsPage />}
+
+        {view === 'dashboard' && (
+          <>
+            <DashboardPage
+              onToggleNotifications={toggleNotifications}
+              filterDate={dashboardFilterDate}
+            />
+          </>
+        )}
+        {view === 'services' && (
+          <ServicesPage onToggleNotifications={toggleNotifications} />
+        )}
+        {view === 'therapists' && (
+          <TherapistsPage
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'staff' && (
+          <StaffPage
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'rooms' && (
+          <RoomsPage
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'analytics' && (
+          <AnalyticsPage
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'insights' && (
+          <InsightsPage
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'clients' && (
+          <ClientsPage
+            clients={clients}
+            setClients={setClients}
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'appointments' && (
+          <AppointmentsPage
+            clients={clients}
+            setClients={setClients}
+            onToggleNotifications={toggleNotifications}
+            onCloseNotifications={closeNotifications}
+          />
+        )}
+        {view === 'offers' && (
+          <OffersPage onToggleNotifications={toggleNotifications} />
+        )}
+        {view === 'settings' && (
+          <SettingsPage onToggleNotifications={toggleNotifications} />
+        )}
+        {view === 'profile' && <ProfilePage />}
       </main>
 
       {isProfileOpen && (

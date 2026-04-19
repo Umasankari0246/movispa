@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import get_db
 from .routes.auth import router as auth_router
+from .routes.mock import router as mock_router
 from .security import hash_secret
 
 
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(mock_router)
 
 
 @app.get("/health")

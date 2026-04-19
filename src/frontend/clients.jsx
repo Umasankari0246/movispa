@@ -1,12 +1,43 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { apiPost } from '../api/apiClient.js'
+import CalendarPopover from '../components/CalendarPopover.jsx'
+import HistoryPopover from '../components/HistoryPopover.jsx'
 import MaterialSymbol from '../components/MaterialSymbol.jsx'
+import usePageHistory from '../hooks/usePageHistory.js'
+import { filterByMonth } from '../utils/dateFilter.js'
 
-export default function ClientsView({ clients, setClients }) {
+export default function ClientsView({
+  clients,
+  setClients,
+  onToggleNotifications,
+  onCloseNotifications,
+}) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTier, setSelectedTier] = useState('all')
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [statusMessage, setStatusMessage] = useState('')
+  const [filterDate, setFilterDate] = useState(null)
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth())
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear())
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [minAge, setMinAge] = useState('')
+  const [maxAge, setMaxAge] = useState('')
+  const [editClient, setEditClient] = useState(null)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    age: '',
+    preferences: '',
+    status: 'Active',
+  })
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
@@ -56,7 +87,8 @@ export default function ClientsView({ clients, setClients }) {
     const membership = resolveTierLabel(client, index)
     const membershipKey = resolveTierId(membership)
     const latestVisit = client.appointmentHistory?.[0]
-    const lastVisitDate = formatDate(latestVisit?.date)
+    const visitDate = client.last_visit_date || latestVisit?.date || client.created_at
+    const lastVisitDate = formatDate(visitDate)
     const lastVisitService = latestVisit?.service || client.preferences || '—'
     return {
       ...client,
@@ -64,18 +96,52 @@ export default function ClientsView({ clients, setClients }) {
       membershipKey,
       lastVisitDate,
       lastVisitService,
+      visitDate,
       listIndex: index,
     }
   })
 
   const filteredClients = clientsWithMeta.filter((client) => {
-    const matchesSearch = searchTerm === '' ||
+    const matchesSearch =
+      searchTerm === '' ||
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.phone.includes(searchTerm) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesTier = selectedTier === 'all' || client.membershipKey === selectedTier
-    return matchesSearch && matchesTier
+    const normalizedStatus = (client.status || '').toLowerCase()
+    const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter
+    const ageValue = Number.parseInt(client.age, 10)
+    const minAgeValue = minAge ? Number.parseInt(minAge, 10) : null
+    const maxAgeValue = maxAge ? Number.parseInt(maxAge, 10) : null
+    const hasValidAge = !Number.isNaN(ageValue)
+    const withinMin = minAgeValue === null || (hasValidAge && ageValue >= minAgeValue)
+    const withinMax = maxAgeValue === null || (hasValidAge && ageValue <= maxAgeValue)
+    const matchesAge = withinMin && withinMax
+    return matchesSearch && matchesTier && matchesStatus && matchesAge
   })
+
+  const dateFilteredClients = useMemo(
+    () => filterByMonth(filteredClients, filterDate, (client) => client.visitDate),
+    [filteredClients, filterDate]
+  )
+
+  const clientsHistory = usePageHistory('clients', isHistoryOpen)
+  const filteredHistory = filterByMonth(clientsHistory, filterDate, (item) => item.date)
+
+  const shiftMonth = (delta) => {
+    const nextMonth = calendarMonth + delta
+    if (nextMonth < 0) {
+      setCalendarMonth(11)
+      setCalendarYear((prev) => prev - 1)
+      return
+    }
+    if (nextMonth > 11) {
+      setCalendarMonth(0)
+      setCalendarYear((prev) => prev + 1)
+      return
+    }
+    setCalendarMonth(nextMonth)
+  }
 
   const handleViewClient = (client) => {
     setSelectedClient(client)
@@ -86,11 +152,61 @@ export default function ClientsView({ clients, setClients }) {
     setIsAddModalOpen(true)
   }
 
-  const handleSaveNewClient = () => {
-    const id = clients.length + 1
-    setClients([...clients, { ...newClient, id, appointmentHistory: [], paymentHistory: [] }])
-    setNewClient({ name: '', email: '', phone: '', address: '', age: '', preferences: '', status: 'Active' })
-    setIsAddModalOpen(false)
+  const handleEditClient = (client) => {
+    setEditClient(client)
+    setEditForm({
+      name: client.name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      address: client.address || '',
+      age: client.age || '',
+      preferences: client.preferences || '',
+      status: client.status || 'Active',
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = () => {
+    if (!editClient) return
+    const updated = {
+      ...editClient,
+      ...editForm,
+    }
+    setClients(clients.map((client) => (client.id === editClient.id ? updated : client)))
+    setIsEditModalOpen(false)
+    setEditClient(null)
+    setStatusMessage('Client updated successfully.')
+  }
+
+  const handleDeleteClient = (client) => {
+    if (!window.confirm(`Delete ${client.name}? This cannot be undone.`)) return
+    setClients(clients.filter((item) => item.id !== client.id))
+    setStatusMessage('Client removed.')
+  }
+
+  const handleSaveNewClient = async () => {
+    setStatusMessage('')
+    try {
+      const payload = {
+        ...newClient,
+        membership: 'Diamond Elite',
+        appointment_history: [],
+        payment_history: [],
+        created_at: new Date().toISOString().slice(0, 10),
+      }
+      const saved = await apiPost('/api/clients', payload)
+      const normalized = {
+        ...saved,
+        appointmentHistory: saved.appointmentHistory || saved.appointment_history || [],
+        paymentHistory: saved.paymentHistory || saved.payment_history || [],
+      }
+      setClients([...clients, normalized])
+      setNewClient({ name: '', email: '', phone: '', address: '', age: '', preferences: '', status: 'Active' })
+      setIsAddModalOpen(false)
+      setStatusMessage('Client added successfully.')
+    } catch (error) {
+      setStatusMessage(error.message || 'Unable to add client.')
+    }
   }
 
   return (
@@ -99,7 +215,7 @@ export default function ClientsView({ clients, setClients }) {
         <div className="clients-header-left">
           <h2 className="clients-title">Clients</h2>
         </div>
-        <div className="clients-header-right">
+        <div className="clients-header-right action-popover-anchor">
           <div className="clients-search">
             <MaterialSymbol name="search" className="text-[18px]" />
             <input
@@ -110,15 +226,63 @@ export default function ClientsView({ clients, setClients }) {
             />
           </div>
           <div className="clients-icon-row">
-            <button type="button" className="icon-pill" aria-label="Calendar">
+            <button
+              type="button"
+              className="icon-pill"
+              aria-label="Calendar"
+              onClick={() => {
+                onCloseNotifications?.()
+                setIsCalendarOpen((prev) => !prev)
+                setIsHistoryOpen(false)
+              }}
+            >
               <MaterialSymbol name="calendar_month" className="text-[18px]" />
             </button>
-            <button type="button" className="icon-pill" aria-label="Clock">
+            <button
+              type="button"
+              className="icon-pill"
+              aria-label="Clock"
+              onClick={() => {
+                onCloseNotifications?.()
+                setIsHistoryOpen((prev) => !prev)
+                setIsCalendarOpen(false)
+              }}
+            >
               <MaterialSymbol name="schedule" className="text-[18px]" />
             </button>
-            <button type="button" className="icon-pill" aria-label="Alerts">
+            <button
+              type="button"
+              className="icon-pill"
+              aria-label="Alerts"
+              onClick={onToggleNotifications}
+            >
               <MaterialSymbol name="notifications" className="text-[18px]" />
             </button>
+            {isCalendarOpen && (
+              <CalendarPopover
+                selectedDate={filterDate}
+                month={calendarMonth}
+                year={calendarYear}
+                onPrev={() => shiftMonth(-1)}
+                onNext={() => shiftMonth(1)}
+                onSelectDate={(date) => {
+                  setFilterDate(date)
+                  setIsCalendarOpen(false)
+                }}
+                onClear={() => {
+                  setFilterDate(null)
+                  setIsCalendarOpen(false)
+                }}
+                onClose={() => setIsCalendarOpen(false)}
+              />
+            )}
+            {isHistoryOpen && (
+              <HistoryPopover
+                title="Clients History"
+                items={filteredHistory}
+                onClose={() => setIsHistoryOpen(false)}
+              />
+            )}
           </div>
         </div>
       </header>
@@ -140,7 +304,11 @@ export default function ClientsView({ clients, setClients }) {
           </div>
         </div>
         <div className="clients-actions">
-          <button type="button" className="ghost-button">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => setIsFilterPanelOpen((prev) => !prev)}
+          >
             <MaterialSymbol name="tune" className="text-[16px]" />
             More Filters
           </button>
@@ -151,7 +319,60 @@ export default function ClientsView({ clients, setClients }) {
         </div>
       </section>
 
+      {isFilterPanelOpen && (
+        <section className="clients-filters-panel">
+          <div className="filter-field">
+            <label htmlFor="client-status-filter">Status</label>
+            <select
+              id="client-status-filter"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div className="filter-field">
+            <label htmlFor="client-age-min">Min age</label>
+            <input
+              id="client-age-min"
+              type="number"
+              min="0"
+              value={minAge}
+              onChange={(event) => setMinAge(event.target.value)}
+              placeholder="e.g. 21"
+            />
+          </div>
+          <div className="filter-field">
+            <label htmlFor="client-age-max">Max age</label>
+            <input
+              id="client-age-max"
+              type="number"
+              min="0"
+              value={maxAge}
+              onChange={(event) => setMaxAge(event.target.value)}
+              placeholder="e.g. 55"
+            />
+          </div>
+          <div className="filter-actions">
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => {
+                setStatusFilter('all')
+                setMinAge('')
+                setMaxAge('')
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="clients-card">
+        {statusMessage && <p className="clients-status">{statusMessage}</p>}
         <div className="clients-table-head">
           <span>Client Name</span>
           <span>Contact Info</span>
@@ -160,7 +381,7 @@ export default function ClientsView({ clients, setClients }) {
           <span>Actions</span>
         </div>
         <div className="clients-table-body">
-          {filteredClients.map((client) => (
+          {dateFilteredClients.map((client) => (
             <div className="clients-row" key={client.id}>
               <div className="client-cell client-name-cell">
                 <div className="client-avatar">
@@ -188,17 +409,36 @@ export default function ClientsView({ clients, setClients }) {
                 <button
                   type="button"
                   className="clients-icon-button"
-                  aria-label="More actions"
+                  aria-label={`View ${client.name}`}
                   onClick={() => handleViewClient(client)}
                 >
-                  <MaterialSymbol name="more_horiz" className="text-[18px]" />
+                  <MaterialSymbol name="visibility" className="text-[18px]" />
+                </button>
+                <button
+                  type="button"
+                  className="clients-icon-button"
+                  aria-label={`Edit ${client.name}`}
+                  onClick={() => handleEditClient(client)}
+                >
+                  <MaterialSymbol name="edit" className="text-[18px]" />
+                </button>
+                <button
+                  type="button"
+                  className="clients-icon-button danger"
+                  aria-label={`Delete ${client.name}`}
+                  onClick={() => handleDeleteClient(client)}
+                >
+                  <MaterialSymbol name="delete" className="text-[18px]" />
                 </button>
               </div>
             </div>
           ))}
         </div>
         <div className="clients-footer">
-          <p>Showing 1 to {Math.min(filteredClients.length, 10)} of {filteredClients.length} clients</p>
+          <p>
+            Showing 1 to {Math.min(dateFilteredClients.length, 10)} of {dateFilteredClients.length}{' '}
+            clients
+          </p>
           <div className="pagination">
             <button type="button" className="page-arrow" aria-label="Previous">
               <MaterialSymbol name="chevron_left" className="text-[18px]" />
@@ -282,6 +522,114 @@ export default function ClientsView({ clients, setClients }) {
       )}
 
       {/* Edit Client Modal */}
+      {isEditModalOpen && editClient && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6">
+          <div className="client-modal">
+            <header className="client-modal-header">
+              <div>
+                <p className="client-modal-breadcrumb">Clients / Edit</p>
+                <h3 className="client-modal-title">Edit Client</h3>
+                <p className="client-modal-subtitle">Update guest details and preferences.</p>
+              </div>
+              <button
+                type="button"
+                className="client-modal-close"
+                onClick={() => setIsEditModalOpen(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </header>
+            <div className="client-modal-card">
+              <div className="client-modal-divider"></div>
+              <form
+                className="client-modal-grid"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  handleSaveEdit()
+                }}
+              >
+                <section className="client-modal-section">
+                  <h4>Personal Details</h4>
+                  <label>
+                    Full Name
+                    <input
+                      value={editForm.name}
+                      onChange={(event) => setEditForm({ ...editForm, name: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Phone Number
+                    <input
+                      value={editForm.phone}
+                      onChange={(event) => setEditForm({ ...editForm, phone: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Email Address
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(event) => setEditForm({ ...editForm, email: event.target.value })}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Address
+                    <input
+                      value={editForm.address}
+                      onChange={(event) => setEditForm({ ...editForm, address: event.target.value })}
+                    />
+                  </label>
+                </section>
+
+                <section className="client-modal-section">
+                  <h4>Preferences</h4>
+                  <label>
+                    Age
+                    <input
+                      type="number"
+                      min="0"
+                      value={editForm.age}
+                      onChange={(event) => setEditForm({ ...editForm, age: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Status
+                    <select
+                      value={editForm.status}
+                      onChange={(event) => setEditForm({ ...editForm, status: event.target.value })}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </label>
+                  <label className="client-modal-textarea">
+                    Appointment Notes & Preferences
+                    <textarea
+                      rows={4}
+                      value={editForm.preferences}
+                      onChange={(event) =>
+                        setEditForm({ ...editForm, preferences: event.target.value })
+                      }
+                    />
+                  </label>
+                </section>
+                <div className="client-modal-actions">
+                  <button type="button" className="ghost-button" onClick={() => setIsEditModalOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="primary-button">
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Add Client Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-6">

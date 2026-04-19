@@ -1,6 +1,12 @@
+import { useEffect, useMemo, useState } from 'react'
+import { apiGet } from '../api/apiClient.js'
+import CalendarPopover from '../components/CalendarPopover.jsx'
+import HistoryPopover from '../components/HistoryPopover.jsx'
 import MaterialSymbol from '../components/MaterialSymbol.jsx'
+import usePageHistory from '../hooks/usePageHistory.js'
+import { filterByMonth } from '../utils/dateFilter.js'
 
-const HIGHLIGHTS = [
+const DEFAULT_HIGHLIGHTS = [
   {
     title: 'AI Recommendations',
     description: 'Actionable insights tailored for each sanctuary zone.',
@@ -13,7 +19,7 @@ const HIGHLIGHTS = [
   },
 ]
 
-const FEED_ITEMS = [
+const DEFAULT_FEED = [
   {
     id: 1,
     text: 'Sent a pricing forecast to the Executive team for Q2 wellness packages.',
@@ -31,25 +37,132 @@ const FEED_ITEMS = [
   },
 ]
 
-export default function InsightsPage() {
+export default function InsightsPage({ onToggleNotifications, onCloseNotifications }) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
+  const [filterDate, setFilterDate] = useState(null)
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth())
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear())
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [insights, setInsights] = useState({
+    highlights: DEFAULT_HIGHLIGHTS,
+    feed: DEFAULT_FEED,
+  })
+
+  useEffect(() => {
+    apiGet('/api/insights')
+      .then((data) => {
+        setInsights({
+          highlights: data?.highlights || DEFAULT_HIGHLIGHTS,
+          feed: data?.feed || DEFAULT_FEED,
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  const dateFilteredFeed = useMemo(
+    () => filterByMonth(insights.feed, filterDate, (item) => item.date),
+    [filterDate, insights.feed]
+  )
+
+  const filteredFeed = useMemo(() => {
+    if (!searchTerm) return dateFilteredFeed
+    return dateFilteredFeed.filter((item) =>
+      item.text.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [dateFilteredFeed, searchTerm])
+
+  const insightsHistory = usePageHistory('insights', isHistoryOpen)
+  const filteredHistory = filterByMonth(insightsHistory, filterDate, (item) => item.date)
+
+  const shiftMonth = (delta) => {
+    const nextMonth = calendarMonth + delta
+    if (nextMonth < 0) {
+      setCalendarMonth(11)
+      setCalendarYear((prev) => prev - 1)
+      return
+    }
+    if (nextMonth > 11) {
+      setCalendarMonth(0)
+      setCalendarYear((prev) => prev + 1)
+      return
+    }
+    setCalendarMonth(nextMonth)
+  }
+
   return (
     <div className="view-body insights-view">
+      {statusMessage && <p className="insights-status">{statusMessage}</p>}
       <header className="insights-header">
         <h2>AI Insights</h2>
-        <div className="insights-header-right">
+        <div className="insights-header-right action-popover-anchor">
           <div className="insights-search">
             <MaterialSymbol name="search" className="text-[18px]" />
-            <input type="text" placeholder="Search insights..." />
+            <input
+              type="text"
+              placeholder="Search insights..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
           </div>
-          <button type="button" className="icon-pill" aria-label="Calendar">
+          <button
+            type="button"
+            className="icon-pill"
+            aria-label="Calendar"
+            onClick={() => {
+              onCloseNotifications?.()
+              setIsCalendarOpen((prev) => !prev)
+              setIsHistoryOpen(false)
+            }}
+          >
             <MaterialSymbol name="calendar_month" className="text-[18px]" />
           </button>
-          <button type="button" className="icon-pill" aria-label="Clock">
+          <button
+            type="button"
+            className="icon-pill"
+            aria-label="Clock"
+            onClick={() => {
+              onCloseNotifications?.()
+              setIsHistoryOpen((prev) => !prev)
+              setIsCalendarOpen(false)
+            }}
+          >
             <MaterialSymbol name="schedule" className="text-[18px]" />
           </button>
-          <button type="button" className="icon-pill" aria-label="Alerts">
+          <button
+            type="button"
+            className="icon-pill"
+            aria-label="Alerts"
+            onClick={onToggleNotifications}
+          >
             <MaterialSymbol name="notifications" className="text-[18px]" />
           </button>
+          {isCalendarOpen && (
+            <CalendarPopover
+              selectedDate={filterDate}
+              month={calendarMonth}
+              year={calendarYear}
+              onPrev={() => shiftMonth(-1)}
+              onNext={() => shiftMonth(1)}
+              onSelectDate={(date) => {
+                setFilterDate(date)
+                setIsCalendarOpen(false)
+              }}
+              onClear={() => {
+                setFilterDate(null)
+                setIsCalendarOpen(false)
+              }}
+              onClose={() => setIsCalendarOpen(false)}
+            />
+          )}
+          {isHistoryOpen && (
+            <HistoryPopover
+              title="Insights History"
+              items={filteredHistory}
+              onClose={() => setIsHistoryOpen(false)}
+            />
+          )}
         </div>
       </header>
 
@@ -62,7 +175,7 @@ export default function InsightsPage() {
             personalized journeys and proactive staffing plans.
           </p>
           <div className="insights-highlight-row">
-            {HIGHLIGHTS.map((item) => (
+            {insights.highlights.map((item) => (
               <div key={item.title}>
                 <p>{item.title}</p>
                 <strong>{item.value}</strong>
@@ -79,7 +192,13 @@ export default function InsightsPage() {
           <p>
             Retention confidence scored at 86% for the next 14 days with reduced churn risk.
           </p>
-          <button type="button" className="primary-button">Explore Strategy</button>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setStatusMessage('Retention strategy opened.')}
+          >
+            Explore Strategy
+          </button>
         </aside>
       </section>
 
@@ -138,10 +257,16 @@ export default function InsightsPage() {
       <section className="insights-feed">
         <div className="insights-feed-head">
           <h4>Neural Activity Feed</h4>
-          <button type="button" className="ghost-button">View history</button>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => setStatusMessage('Insight history loaded.')}
+          >
+            View history
+          </button>
         </div>
         <div className="insights-feed-list">
-          {FEED_ITEMS.map((item) => (
+          {filteredFeed.map((item) => (
             <div className="insights-feed-row" key={item.id}>
               <p>{item.text}</p>
               <span>{item.time}</span>

@@ -1,2013 +1,717 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { apiGet, apiPost } from '../api/apiClient.js'
+import CalendarPopover from '../components/CalendarPopover.jsx'
+import HistoryPopover from '../components/HistoryPopover.jsx'
 import MaterialSymbol from '../components/MaterialSymbol.jsx'
+import usePageHistory from '../hooks/usePageHistory.js'
+import { filterByMonth } from '../utils/dateFilter.js'
 
-const therapists = [
-  { value: 'Sarah Jenkins', label: 'Sarah Jenkins' },
-  { value: 'Julian Reed', label: 'Julian Reed' },
-  { value: 'Elena Moretti', label: 'Elena Moretti' },
+const DEFAULT_CALENDAR_DAYS = [
+  { day: 29, muted: true },
+  { day: 30, muted: true },
+  { day: 1, events: ['9:00 AM'] },
+  { day: 2 },
+  { day: 3, events: ['1:30 PM', '4:00 PM'] },
+  { day: 4 },
+  { day: 5 },
+  { day: 6 },
+  { day: 7, events: ['10:00 AM'] },
+  { day: 8 },
+  { day: 9 },
+  { day: 10, events: ['10:30 AM'] },
+  { day: 11 },
+  { day: 12 },
 ]
 
-const serviceGroups = [
+const DEFAULT_UPCOMING = [
   {
-    label: 'Massage Services',
-    options: [
-      { value: 'Swedish Massage', label: 'Swedish Massage' },
-      { value: 'Deep Tissue Massage', label: 'Deep Tissue Massage' },
-      { value: 'Aromatherapy Massage', label: 'Aromatherapy Massage' },
-    ],
+    name: 'Elena Gilbert',
+    service: 'Deep Tissue Massage',
+    status: 'Active',
+    time: '10:00 - 11:30 AM',
+    therapist: 'Dr. Julianne S.',
   },
   {
-    label: 'Facial Treatments',
-    options: [
-      { value: 'Basic Facial', label: 'Basic Facial' },
-      { value: 'Herbal Facial', label: 'Herbal Facial' },
-      { value: 'Anti-Aging Facial', label: 'Anti-Aging Facial' },
-      { value: 'Acne Treatment Facial', label: 'Acne Treatment Facial' },
-    ],
+    name: 'Marcus Vane',
+    service: 'Facial Cleansing',
+    status: 'Upcoming',
+    time: '01:45 - 02:45 PM',
+    therapist: 'Therapist Ryan',
   },
   {
-    label: 'Beauty & Grooming',
-    options: [
-      { value: 'Manicure', label: 'Manicure' },
-      { value: 'Pedicure', label: 'Pedicure' },
-      { value: 'Nail Art', label: 'Nail Art' },
-    ],
-  },
-  {
-    label: 'Body Treatments',
-    options: [
-      { value: 'Body Scrub', label: 'Body Scrub' },
-      { value: 'Body Polishing', label: 'Body Polishing' },
-      { value: 'Body Wrap', label: 'Body Wrap' },
-    ],
-  },
-  {
-    label: 'Hair Services',
-    options: [
-      { value: 'Hair Spa', label: 'Hair Spa' },
-      { value: 'Hair Cut', label: 'Hair Cut' },
-      { value: 'Hair Coloring', label: 'Hair Coloring' },
-      { value: 'Hair Smoothening / Straightening', label: 'Hair Smoothening / Straightening' },
-    ],
-  },
-  {
-    label: 'Wellness & Relaxation',
-    options: [
-      { value: 'Steam Bath', label: 'Steam Bath' },
-      { value: 'Yoga Session', label: 'Yoga Session' },
-      { value: 'Meditation Therapy', label: 'Meditation Therapy' },
-    ],
+    name: 'Sarah Koenig',
+    service: 'Full Body Detox',
+    status: 'Upcoming',
+    time: '04:00 - 05:30 PM',
+    therapist: 'Dr. Elena M.',
   },
 ]
 
-const servicePrices = {
-  'Swedish Massage': 1500,
-  'Deep Tissue Massage': 2000,
-  'Aromatherapy Massage': 1800,
-  'Basic Facial': 800,
-  'Herbal Facial': 1200,
-  'Anti-Aging Facial': 2000,
-  'Acne Treatment Facial': 1500,
-  'Manicure': 500,
-  'Pedicure': 600,
-  'Nail Art': 1000,
-  'Body Scrub': 1500,
-  'Body Polishing': 2000,
-  'Body Wrap': 2500,
-  'Hair Spa': 1200,
-  'Hair Cut': 400,
-  'Hair Coloring': 2000,
-  'Hair Smoothening / Straightening': 5000,
-  'Steam Bath': 500,
-  'Yoga Session': 500,
-  'Meditation Therapy': 400,
+const DEFAULT_OCCUPANCY = [
+  { name: 'Zen Suite', value: 68 },
+  { name: 'Lotus Room', value: 42 },
+  { name: 'Ocean Mist Hall', value: 78 },
+]
+
+const DEFAULT_AVAILABILITY = [
+  { name: 'Dr. Julianne', status: 'Available' },
+  { name: 'Ryan H.', status: 'In Session' },
+  { name: 'Marcus L.', status: 'Available' },
+  { name: 'Elena M.', status: 'Off Duty' },
+]
+
+const toDateKey = (value) => {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toISOString().slice(0, 10)
 }
 
-const appointmentItems = [
-  {
-    date: 'Apr 14, 10:30 AM',
-    title: 'Aromatherapy Massage',
-    therapist: 'Sarah Jenkins',
-    status: 'Confirmed',
-  },
-  {
-    date: 'Apr 18, 2:00 PM',
-    title: 'Herbal Facial',
-    therapist: 'Julian Reed',
-    status: 'Rescheduled',
-  },
-]
-
-const rooms = [
-  { value: 'Room 101', label: 'Room 101 - Massage Suite' },
-  { value: 'Room 102', label: 'Room 102 - Facial Room' },
-  { value: 'Room 103', label: 'Room 103 - Wellness Suite' },
-  { value: 'Room 104', label: 'Room 104 - Meditate Therapy' },
-  { value: 'Room 105', label: 'Room 105 - Asana Room' },
-]
-
-const initialFormState = {
-  fullName: '',
-  gender: '',
-  ageOrDob: '',
-  phone: '',
-  email: '',
-  address: '',
-  skinType: '',
-  allergies: '',
-  medicalConditions: '',
-  preferredService: 'Swedish Massage',
-  appointmentDate: '',
-  startTime: '',
-  endTime: '',
-  selectedService: 'Swedish Massage',
-  assignedTherapist: therapists[0].value,
-  assignedRoom: rooms[0].value,
-  paymentMethod: 'Credit/Debit Card',
-  discount: '',
-  cardHolderName: '',
-  cardNumber: '',
-  expiryDate: '',
-  cvv: '',
-  upiId: '',
-  upiApp: '',
-  termsAccepted: false,
-  cancellationAccepted: false,
-  safetyAccepted: false,
+const parseTimeLabel = (value) => {
+  if (!value) return 'Appointment'
+  const parts = String(value).split('-')
+  return parts[0]?.trim() || value
 }
 
-const demoFormData = {
-  fullName: 'Sarah Anderson',
-  gender: 'Female',
-  ageOrDob: '28',
-  phone: '+91 98765 43210',
-  email: 'sarah.anderson@example.com',
-  address: '123 Wellness Lane, Sanctuary City, SC 12345',
-  skinType: 'Sensitive, Nut allergy',
-  medicalConditions: 'Mild back tension, regular exercise lover',
-  preferredService: 'Swedish Massage',
-  appointmentDate: '2026-04-15',
-  startTime: '10:00',
-  endTime: '11:00',
-  selectedService: 'Swedish Massage',
-  assignedTherapist: 'Sarah Jenkins',
-  assignedRoom: 'Room 101 - Massage Suite',
-  discount: '10%',
-  cardHolderName: 'Sarah Anderson',
-  cardNumber: '4532 1234 5678 9010',
-  expiryDate: '12/26',
-  cvv: '123',
-  upiId: 'sarah.anderson@okaxis',
-  upiApp: 'GPay',
+const formatEventLabel = (item) => {
+  if (!item) return 'Appointment'
+  const time = parseTimeLabel(item.time)
+  if (!item.name) return time
+  return `${time} ${item.name}`
 }
 
-function AppointmentsView({ clients, setClients }) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [form, setForm] = useState(initialFormState)
-  const [paymentSuccess, setPaymentSuccess] = useState(false)
-  const [paymentCompleted, setPaymentCompleted] = useState(false)
-  const [termsAgreed, setTermsAgreed] = useState(false)
-  const [transactionId, setTransactionId] = useState('')
-  const [customerName, setCustomerName] = useState('')
-  const [isSuccessOpen, setIsSuccessOpen] = useState(false)
-  const [isPaymentSuccessOpen, setIsPaymentSuccessOpen] = useState(false)
-  const [showPaymentOptions, setShowPaymentOptions] = useState(false)
-  const [step, setStep] = useState(1)
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      clientName: 'Emily Johnson',
-      clientId: '#MS-8342',
-      therapist: 'Sarah Jenkins',
-      service: 'Swedish Massage',
-      room: 'Tranquil Room',
-      date: 'Oct 22, 2023',
-      time: '10:00 AM - 11:00 AM',
-      status: 'Pending',
-      transactionId: 'TXN12345678'
-    },
-    {
-      id: 2,
-      clientName: 'Julian Thorne',
-      clientId: '#MS-8832',
-      therapist: 'Sofia Rossi',
-      service: 'Hot Stone',
-      room: 'Cedar Room',
-      date: 'Oct 24, 2023',
-      time: '01:00 PM - 02:30 PM',
-      status: 'Pending',
-      transactionId: 'TXN87654321'
-    },
-    {
-      id: 3,
-      clientName: 'Sarah Jenkins',
-      clientId: '#MS-9445',
-      therapist: 'Elena Thorne',
-      service: 'Aromatherapy',
-      room: 'Zen Den',
-      date: 'Oct 24, 2023',
-      time: '03:45 PM - 04:45 PM',
-      status: 'Rejected',
-      transactionId: 'TXN98765432'
-    },
-    {
-      id: 4,
-      clientName: 'Beatrice Miller',
-      clientId: '#MS-1022',
-      therapist: 'Marcus Chen',
-      service: 'Swedish',
-      room: 'Lotus Suite',
-      date: 'Oct 25, 2023',
-      time: '09:00 AM - 10:00 AM',
-      status: 'Confirmed',
-      transactionId: 'TXN11223344'
+const buildCalendarGrid = (year, month) => {
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const prevMonthDays = new Date(year, month, 0).getDate()
+  const cells = []
+
+  for (let i = 0; i < firstDay; i += 1) {
+    const day = prevMonthDays - firstDay + i + 1
+    cells.push({ day, muted: true, date: new Date(year, month - 1, day) })
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push({ day, muted: false, date: new Date(year, month, day) })
+  }
+
+  const remainder = cells.length % 7
+  if (remainder !== 0) {
+    const fill = 7 - remainder
+    for (let day = 1; day <= fill; day += 1) {
+      cells.push({ day, muted: true, date: new Date(year, month + 1, day) })
     }
-  ])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedAppointment, setSelectedAppointment] = useState(null)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isEditFormModalOpen, setIsEditFormModalOpen] = useState(false)
-  const [editingAppointment, setEditingAppointment] = useState(null)
-  const [filterBy, setFilterBy] = useState('all')
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  }
 
-  // Filter appointments based on search and filter
-  const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = searchTerm === '' || 
-      appointment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.therapist.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.room.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.clientId.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesFilter = filterBy === 'all' || appointment.status.toLowerCase() === filterBy.toLowerCase()
-    
-    return matchesSearch && matchesFilter
+  return cells
+}
+
+const formatDisplayDate = (value) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  })
+}
+
+const resolveLegacyCalendarDate = (item, year, month) => {
+  if (!item || typeof item.day !== 'number') return null
+  if (!item.muted) return new Date(year, month, item.day)
+  if (item.day > 20) return new Date(year, month - 1, item.day)
+  return new Date(year, month + 1, item.day)
+}
+
+export default function AppointmentsView({ onToggleNotifications, onCloseNotifications }) {
+  const [viewMode, setViewMode] = useState('calendar')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [filterDate, setFilterDate] = useState(null)
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth())
+  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear())
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [appointmentsData, setAppointmentsData] = useState({
+    calendar_days: DEFAULT_CALENDAR_DAYS,
+    upcoming_today: DEFAULT_UPCOMING,
+    room_occupancy: DEFAULT_OCCUPANCY,
+    therapist_availability: DEFAULT_AVAILABILITY,
+    new_appointment: {
+      time_slots: ['09:00 AM', '10:30 AM', '12:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'],
+      rooms: [
+        { name: 'Eucalyptus Sanctuary', status: 'Free' },
+        { name: 'Waterfall Room', status: 'In Use' },
+      ],
+      status_options: ['Confirmed', 'Pending'],
+    },
+  })
+  const [statusMessage, setStatusMessage] = useState('')
+  const [newAppointment, setNewAppointment] = useState({
+    name: '',
+    service: 'Deep Tissue Renewal (90 min)',
+    therapist: 'Elena Vance',
+    time: '10:30 AM',
+    room: 'Eucalyptus Sanctuary',
+    status: 'Confirmed',
   })
 
-  const calculatePrice = () => {
-    const basePrice = servicePrices[form.selectedService] || 1500
-    if (!form.startTime || !form.endTime) return basePrice
+  useEffect(() => {
+    apiGet('/api/appointments')
+      .then((data) => {
+        if (!data) return
+        setAppointmentsData((prev) => ({
+          ...prev,
+          ...data,
+          new_appointment: data.new_appointment || prev.new_appointment,
+        }))
+      })
+      .catch(() => {})
+  }, [])
 
-    const [startHour, startMin] = form.startTime.split(':').map(Number)
-    const [endHour, endMin] = form.endTime.split(':').map(Number)
-    const startMinutes = startHour * 60 + startMin
-    const endMinutes = endHour * 60 + endMin
-    const durationHours = (endMinutes - startMinutes) / 60
+  const filteredUpcoming = appointmentsData.upcoming_today.filter((item) => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      item.name.toLowerCase().includes(query) ||
+      item.service.toLowerCase().includes(query) ||
+      item.therapist.toLowerCase().includes(query)
+    )
+  })
 
-    if (durationHours > 1) return basePrice + 300
-    if (durationHours < 1) return Math.max(basePrice - 300, 0)
-    return basePrice
-  }
+  const dateFilteredUpcoming = filterByMonth(
+    filteredUpcoming,
+    filterDate,
+    (item) => item.date
+  )
 
-  const appointmentSummary = {
-    clientName: form.fullName || 'Sarah Jenkins',
-    clientId: '#MS-9445',
-    therapist: form.assignedTherapist || 'Elena Thorne',
-    service: form.selectedService || 'Aromatherapy',
-    room: form.assignedRoom || 'Zen Den',
-    date: form.appointmentDate || 'Oct 24, 2023',
-    time: form.startTime && form.endTime ? `${form.startTime} - ${form.endTime}` : '03:45 PM - 04:45 PM',
-    price: calculatePrice(),
-  }
+  const eventsByDate = useMemo(() => {
+    const map = {}
+    appointmentsData.upcoming_today.forEach((item) => {
+      const key = toDateKey(item.date)
+      if (!key) return
+      if (!map[key]) map[key] = []
+      map[key].push(formatEventLabel(item))
+    })
+    appointmentsData.calendar_days.forEach((item) => {
+      const date = resolveLegacyCalendarDate(item, calendarYear, calendarMonth)
+      const key = toDateKey(date)
+      if (!key || !item.events?.length) return
+      if (!map[key]) map[key] = []
+      item.events.forEach((event) => map[key].push(event))
+    })
+    return map
+  }, [appointmentsData.calendar_days, appointmentsData.upcoming_today, calendarMonth, calendarYear])
 
-  const stepCompletion = {
-    1:
-      Boolean(form.fullName) &&
-      Boolean(form.gender) &&
-      Boolean(form.ageOrDob) &&
-      Boolean(form.phone) &&
-      Boolean(form.email) &&
-      Boolean(form.address),
-    2:
-      Boolean(form.skinType) &&
-      Boolean(form.medicalConditions) &&
-      Boolean(form.preferredService),
-    3:
-      Boolean(form.appointmentDate) &&
-      Boolean(form.startTime) &&
-      Boolean(form.endTime) &&
-      Boolean(form.selectedService) &&
-      Boolean(form.assignedTherapist) &&
-      Boolean(form.assignedRoom),
-    4: paymentCompleted,
-    5: form.termsAccepted,
-  }
+  const calendarCells = useMemo(() => {
+    const cells = buildCalendarGrid(calendarYear, calendarMonth)
+    return cells.map((cell) => {
+      const key = toDateKey(cell.date)
+      return {
+        ...cell,
+        key,
+        events: key && eventsByDate[key] ? eventsByDate[key] : [],
+      }
+    })
+  }, [calendarMonth, calendarYear, eventsByDate])
 
-  const handleChange = (field) => (event) => {
-    const value =
-      event.target.type === 'checkbox'
-        ? event.target.checked
-        : event.target.value
+  const monthLabel = useMemo(
+    () =>
+      new Date(calendarYear, calendarMonth, 1).toLocaleString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      }),
+    [calendarMonth, calendarYear]
+  )
 
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+  const todayKey = toDateKey(new Date())
+  const todayCount = todayKey ? (eventsByDate[todayKey] || []).length : 0
 
-    if (paymentCompleted) {
-      setPaymentCompleted(false)
-      setShowPaymentOptions(false)
-    }
-  }
+  const appointmentsHistory = usePageHistory('appointments', isHistoryOpen)
+  const filteredHistory = filterByMonth(appointmentsHistory, filterDate, (item) => item.date)
 
-  const handleAutoFill = () => {
-    setForm(demoFormData)
-  }
-
-  const validatePaymentDetails = () => {
-    if (form.paymentMethod === 'Credit/Debit Card') {
-      return Boolean(
-        form.cardNumber.trim() &&
-        form.cardHolderName.trim() &&
-        form.expiryDate.trim() &&
-        form.cvv.trim()
-      )
-    }
-
-    if (form.paymentMethod === 'UPI') {
-      return Boolean(form.upiId.trim() && form.upiApp.trim())
-    }
-
-    return false
-  }
-
-  const handlePayment = (event) => {
-    event.preventDefault()
-
-    if (!validatePaymentDetails()) {
-      window.alert('Please complete the selected payment method fields before paying.')
+  const shiftMonth = (delta) => {
+    const nextMonth = calendarMonth + delta
+    if (nextMonth < 0) {
+      setCalendarMonth(11)
+      setCalendarYear((prev) => prev - 1)
       return
     }
-
-    const txnId = 'TXN' + Date.now().toString().slice(-8)
-    setTransactionId(txnId)
-    setCustomerName(form.fullName || 'Sarah Jenkins')
-    setPaymentSuccess(true)
-    setPaymentCompleted(true)
-    setIsPaymentSuccessOpen(true)
-    setIsPaymentModalOpen(false)
-
-    setTimeout(() => {
-      setIsPaymentSuccessOpen(false)
-      setStep(5)
-    }, 2000)
-  }
-
-  const handleStepNext = (event) => {
-    event.preventDefault()
-    if (step < 5) {
-      setStep(step + 1)
-    } else if (stepCompletion[5]) {
-      handleConfirmBooking()
+    if (nextMonth > 11) {
+      setCalendarMonth(0)
+      setCalendarYear((prev) => prev + 1)
+      return
     }
+    setCalendarMonth(nextMonth)
   }
 
-  const handleConfirmBooking = () => {
-    // Check if client exists, if not add as inactive
-    const existingClientIndex = clients.findIndex(client => 
-      client.email === form.email || client.phone === form.phone
-    )
-    
-    let clientId
-    if (existingClientIndex === -1) {
-      // Add new client as inactive
-      const newClient = {
-        id: clients.length + 1,
-        name: form.fullName,
-        email: form.email,
-        phone: form.phone,
-        status: 'Inactive',
-        address: form.address,
-        age: form.ageOrDob,
-        preferences: form.preferredService,
-        appointmentHistory: [],
-        paymentHistory: [],
+  const handleAddAppointment = async () => {
+    setStatusMessage('')
+    try {
+      const payload = {
+        name: newAppointment.name || 'New Client',
+        service: newAppointment.service,
+        status: newAppointment.status,
+        time: newAppointment.time,
+        therapist: newAppointment.therapist,
+        date: new Date().toISOString().slice(0, 10),
       }
-      setClients([...clients, newClient])
-      clientId = newClient.id
-    } else {
-      clientId = clients[existingClientIndex].id
+      const saved = await apiPost('/api/appointments', payload)
+      setAppointmentsData((prev) => ({
+        ...prev,
+        upcoming_today: [saved, ...prev.upcoming_today],
+      }))
+      setIsAddOpen(false)
+      setNewAppointment({
+        name: '',
+        service: 'Deep Tissue Renewal (90 min)',
+        therapist: 'Elena Vance',
+        time: '10:30 AM',
+        room: 'Eucalyptus Sanctuary',
+        status: 'Confirmed',
+      })
+      setStatusMessage('Appointment booked successfully.')
+    } catch (error) {
+      setStatusMessage(error.message || 'Unable to book appointment.')
     }
-    
-    // Activate the client
-    setClients(prevClients => 
-      prevClients.map(client => 
-        client.id === clientId 
-          ? { 
-              ...client, 
-              status: 'Active',
-              appointmentHistory: [
-                ...client.appointmentHistory,
-                {
-                  date: form.appointmentDate,
-                  service: form.selectedService,
-                  status: 'Confirmed'
-                }
-              ]
-            }
-          : client
-      )
-    )
-    
-    // Generate random transaction ID
-    const transactionId = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase()
-    
-    // Add new appointment to the appointments list
-    const newAppointment = {
-      id: appointments.length + 1,
-      clientName: form.fullName,
-      clientId: '#MS-' + Math.random().toString(36).substr(2, 4).toUpperCase(),
-      therapist: form.assignedTherapist,
-      service: form.selectedService,
-      room: form.assignedRoom,
-      date: form.appointmentDate,
-      time: `${form.startTime} - ${form.endTime}`,
-      status: 'Pending',
-      transactionId: transactionId
-    }
-    
-    setAppointments([...appointments, newAppointment])
-    setIsPaymentSuccessOpen(true)
-    setTimeout(() => {
-      setIsPaymentSuccessOpen(false)
-      setIsSuccessOpen(true)
-    }, 2000)
-  }
-
-  const handleApproveAppointment = (appointmentId) => {
-    setAppointments(appointments.map(apt => 
-      apt.id === appointmentId ? {...apt, status: 'Confirmed'} : apt
-    ))
-  }
-
-  const handleRejectAppointment = (appointmentId) => {
-    setAppointments(appointments.map(apt => 
-      apt.id === appointmentId ? {...apt, status: 'Rejected'} : apt
-    ))
-  }
-
-  const handleStepBack = () => {
-    setStep((current) => Math.max(1, current - 1))
-  }
-
-  const openModal = () => {
-    setIsModalOpen(true)
-    setStep(1)
-    setShowPaymentOptions(false)
-    setPaymentCompleted(false)
   }
 
   return (
     <div className="view-body appointments-view">
-      <div className="mb-6">
-        <div>
-          <h3 className="text-[28px] font-semibold">Appointments</h3>
-          <p className="text-sm text-muted">Manage admissions, bookings and therapist assignments.</p>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">TODAY'S TOTAL</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">38</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-sm font-medium text-green-600">+12%</span>
-                <span className="text-xs text-gray-500">8 more than yesterday</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
-              <MaterialSymbol name="calendar_month" className="text-[24px] text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">CONFIRMED</p>
-              <p className="text-3xl font-bold text-green-600 mt-1">24</p>
-              <p className="text-xs text-gray-500 mt-2">63% capacity reached</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-green-50 flex items-center justify-center">
-              <MaterialSymbol name="check_circle" className="text-[24px] text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">PENDING</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-1">09</p>
-              <p className="text-xs text-yellow-600 mt-2">Requires urgent action</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-yellow-50 flex items-center justify-center">
-              <MaterialSymbol name="pending" className="text-[24px] text-yellow-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl p-6 shadow-sm" style={{backgroundColor: 'lch(89.06% 14.1 91.93)'}}>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-medium" style={{color: '#3e2723'}}>NEXT UP</p>
-              <p className="text-lg font-bold mt-1" style={{color: '#3e2723'}}>Sarah Jenkins</p>
-              <p className="text-sm mt-1" style={{color: '#3e2723'}}>Aromatherapy Session</p>
-              <p className="text-xs mt-2" style={{color: '#3e2723', opacity: 0.9}}>in 14 min</p>
-            </div>
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-              <MaterialSymbol name="schedule" className="text-[24px] text-white" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
+      <header className="appointments-header">
+        <h2>Appointments</h2>
+        <div className="appointments-header-right action-popover-anchor">
+          <div className="appointments-search">
+            <MaterialSymbol name="search" className="text-[18px]" />
             <input
               type="text"
-              placeholder="Search client, service, or room..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-300 bg-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{focusRingColor: '#1f4d3e'}}
+              placeholder="Search appointments or clients..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
-            <MaterialSymbol name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-gray-400" />
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative z-10" style={{ overflow: 'visible' }}>
-            <button 
-              className="flex items-center gap-2 h-12 px-4 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <MaterialSymbol name="filter_alt" className="text-[16px]" />
-              Filters
-              <MaterialSymbol name="expand_more" className="text-[14px]" />
-            </button>
           </div>
           <button
             type="button"
-            className="rounded-full px-6 py-3 text-[13px] font-semibold uppercase tracking-[1px] text-white shadow-soft transition hover:brightness-110"
-            style={{backgroundColor: '#1f4d3e'}}
-            onClick={openModal}
+            className="icon-pill"
+            aria-label="Calendar"
+            onClick={() => {
+              onCloseNotifications?.()
+              setIsCalendarOpen((prev) => !prev)
+              setIsHistoryOpen(false)
+            }}
           >
-            + New Appointment
+            <MaterialSymbol name="calendar_month" className="text-[18px]" />
+          </button>
+          <button
+            type="button"
+            className="icon-pill"
+            aria-label="Clock"
+            onClick={() => {
+              onCloseNotifications?.()
+              setIsHistoryOpen((prev) => !prev)
+              setIsCalendarOpen(false)
+            }}
+          >
+            <MaterialSymbol name="schedule" className="text-[18px]" />
+          </button>
+          <button
+            type="button"
+            className="icon-pill"
+            aria-label="Alerts"
+            onClick={onToggleNotifications}
+          >
+            <MaterialSymbol name="notifications" className="text-[18px]" />
+          </button>
+          {isCalendarOpen && (
+            <CalendarPopover
+              selectedDate={filterDate}
+              month={calendarMonth}
+              year={calendarYear}
+              onPrev={() => shiftMonth(-1)}
+              onNext={() => shiftMonth(1)}
+              onSelectDate={(date) => {
+                setFilterDate(date)
+                setIsCalendarOpen(false)
+              }}
+              onClear={() => {
+                setFilterDate(null)
+                setIsCalendarOpen(false)
+              }}
+              onClose={() => setIsCalendarOpen(false)}
+            />
+          )}
+          {isHistoryOpen && (
+            <HistoryPopover
+              title="Appointments History"
+              items={filteredHistory}
+              onClose={() => setIsHistoryOpen(false)}
+            />
+          )}
+        </div>
+      </header>
+
+      {statusMessage && <p className="appointments-status">{statusMessage}</p>}
+
+      <section className="appointments-toolbar">
+        <div>
+  
+          <p>Managing the rhythm of sanctuary</p>
+        </div>
+        <div className="appointments-actions">
+          <div className="appointments-toggle">
+            <button
+              type="button"
+              className={viewMode === 'calendar' ? 'is-active' : ''}
+              onClick={() => setViewMode('calendar')}
+            >
+              Calendar
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'list' ? 'is-active' : ''}
+              onClick={() => setViewMode('list')}
+            >
+              List View
+            </button>
+          </div>
+          <button type="button" className="primary-button" onClick={() => setIsAddOpen(true)}>
+            <MaterialSymbol name="add" className="text-[18px]" />
+            New Appointment
           </button>
         </div>
-      </div>
+      </section>
 
-
-      
-      {/* Appointments Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">CLIENT</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">THERAPIST</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SERVICE</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ROOM</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">DATE & TIME</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">STATUS</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredAppointments.map((appointment) => (
-                <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{backgroundColor: '#1f4d3e'}}>
-                        <span className="text-sm font-bold text-white">
-                          {appointment.clientName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-semibold text-gray-900">{appointment.clientName}</div>
-                        <div className="text-xs text-gray-500">{appointment.clientId}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{appointment.therapist}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{appointment.service}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{appointment.room}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{appointment.date}</div>
-                    <div className="text-xs text-gray-500">{appointment.time}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      appointment.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
-                      appointment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      appointment.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {appointment.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-3">
-                      <button 
-                        type="button" 
-                        className="text-gray-600 hover:text-blue-600 transition-colors" 
-                        title="View"
-                        onClick={() => {
-                          setSelectedAppointment(appointment)
-                          setIsViewModalOpen(true)
-                        }}
-                      >
-                        <MaterialSymbol name="visibility" className="text-[20px]" />
-                      </button>
-                      <button 
-                        type="button" 
-                        className="text-gray-600 hover:text-blue-600 transition-colors" 
-                        title="Edit"
-                        onClick={() => {
-                          const editForm = {
-                            fullName: appointment.clientName,
-                            gender: '',
-                            ageOrDob: '',
-                            phone: '',
-                            email: '',
-                            address: '',
-                            skinType: '',
-                            allergies: '',
-                            medicalConditions: '',
-                            preferredService: appointment.service,
-                            appointmentDate: appointment.date,
-                            startTime: appointment.time.split(' - ')[0] || '',
-                            endTime: appointment.time.split(' - ')[1] || '',
-                            selectedService: appointment.service,
-                            assignedTherapist: appointment.therapist,
-                            assignedRoom: appointment.room,
-                            paymentMethod: 'Credit/Debit Card',
-                            discount: '',
-                            cardHolderName: '',
-                            cardNumber: '',
-                            expiryDate: '',
-                            cvv: '',
-                            upiId: '',
-                            upiApp: '',
-                            termsAccepted: true,
-                            cancellationAccepted: false,
-                            safetyAccepted: false,
-                          }
-                          setForm(editForm)
-                          setEditingAppointment(appointment)
-                          setIsEditFormModalOpen(true)
-                          setStep(1)
-                        }}
-                      >
-                        <MaterialSymbol name="edit_square" className="text-[20px]" />
-                      </button>
-                      {appointment.status === 'Pending' && (
-                        <>
-                          <button 
-                            className="p-2 rounded-lg border border-gray-300 bg-white text-green-600 hover:bg-green-50 transition-colors"
-                            onClick={() => {
-                              handleApproveAppointment(appointment.id)
-                            }}
-                            title="Approve"
-                          >
-                            <MaterialSymbol name="check" className="text-[16px]" />
-                          </button>
-                          <button 
-                            className="p-2 rounded-lg border border-gray-300 bg-white text-red-600 hover:bg-red-50 transition-colors"
-                            onClick={() => {
-                              handleRejectAppointment(appointment.id)
-                            }}
-                            title="Reject"
-                          >
-                            <MaterialSymbol name="close" className="text-[16px]" />
-                          </button>
-                        </>
-                      )}
-                      {appointment.status !== 'Pending' && (
-                        <button 
-                          className="p-2 rounded-lg border border-gray-300 bg-white text-red-600 hover:bg-red-50 transition-colors"
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this appointment?')) {
-                              setAppointments(appointments.filter(a => a.id !== appointment.id))
-                            }
-                          }}
-                          title="Delete"
-                        >
-                          <MaterialSymbol name="delete" className="text-[16px]" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Showing <span className="font-semibold">{filteredAppointments.length}</span> of <span className="font-semibold">{appointments.length}</span> appointments
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled
-            >
-              <MaterialSymbol name="chevron_left" className="text-[16px]" />
-            </button>
-            <button 
-              className="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled
-            >
-              <MaterialSymbol name="chevron_right" className="text-[16px]" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {isModalOpen && (
-  <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-    <div className="w-full max-w-[920px] h-[calc(100vh-100px)] max-h-[860px] overflow-hidden rounded-[28px] bg-white shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-        <div>
-          <p className="text-[13px] uppercase tracking-[1.3px] text-muted">Appointment intake</p>
-          <h3 className="text-[26px] font-semibold">New appointment admission</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
-                  onClick={handleAutoFill}
-                  title="Auto-fill with demo data"
-                >
-                  ↻ Demo
-                </button>
-                <button
-                  type="button"
-                  className="text-muted transition hover:text-ink"
-                  onClick={() => setIsModalOpen(false)}
-                  aria-label="Close form"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <div className="flex h-full flex-col overflow-hidden px-6 py-5">
-              <div className="mb-5 grid gap-3 md:grid-cols-5">
-                {[
-                  { id: 1, label: 'Client details' },
-                  { id: 2, label: 'Health details' },
-                  { id: 3, label: 'Appointment' },
-                  { id: 4, label: 'Payment' },
-                  { id: 5, label: 'Terms' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setStep(item.id)}
-                    className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${
-                      step === item.id
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-slate-200 bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${
-                          stepCompletion[item.id]
-                            ? 'border-emerald-500 bg-emerald-100 text-emerald-700'
-                            : 'border-slate-300 bg-white text-slate-500'
-                        }`}
-                      >
-                        {stepCompletion[item.id] ? '✓' : item.id}
-                      </span>
-                      <span className="font-medium">Step {item.id}</span>
-                    </div>
-                    <p className="mt-2 text-[11px] uppercase tracking-[1px] text-muted">{item.label}</p>
+      {viewMode === 'calendar' ? (
+        <>
+          <section className="appointments-layout">
+            <div className="calendar-card">
+              <div className="calendar-head">
+                <div>
+                  <h4>{monthLabel}</h4>
+                  <p>
+                    You have {todayCount} appointment{todayCount === 1 ? '' : 's'} scheduled today
+                  </p>
+                </div>
+                <div className="calendar-nav">
+                  <button type="button" aria-label="Previous" onClick={() => shiftMonth(-1)}>
+                    <MaterialSymbol name="chevron_left" className="text-[18px]" />
                   </button>
+                  <button type="button" aria-label="Next" onClick={() => shiftMonth(1)}>
+                    <MaterialSymbol name="chevron_right" className="text-[18px]" />
+                  </button>
+                </div>
+              </div>
+              <div className="calendar-grid">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
+                  <span className="calendar-label" key={label}>
+                    {label}
+                  </span>
+                ))}
+                {calendarCells.map((item) => (
+                  <div
+                    key={item.key || `day-${item.day}-${item.muted ? 'muted' : 'current'}`}
+                    className={item.muted ? 'calendar-cell muted' : 'calendar-cell'}
+                  >
+                    <span className="calendar-day">{item.day}</span>
+                    {item.events.map((event, index) => (
+                      <span
+                        key={`${item.key || item.day}-${event}-${index}`}
+                        className={`calendar-event${index === 0 ? '' : ' alt'}`}
+                      >
+                        {event}
+                      </span>
+                    ))}
+                  </div>
                 ))}
               </div>
+            </div>
 
-              <form className="flex h-full flex-col overflow-hidden" onSubmit={handleStepNext}>
-                <div className="flex-1 overflow-y-auto pr-1">
-                  {step === 1 && (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                        <h4 className="text-lg font-semibold">1. Basic Client Details</h4>
-                        <label className="block text-sm text-slate-800">
-                          Full Name
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.fullName}
-                            onChange={handleChange('fullName')}
-                            placeholder="Enter full name"
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          Gender
-                          <select
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.gender}
-                            onChange={handleChange('gender')}
-                          >
-                            <option value="">Select gender</option>
-                            <option value="Female">Female</option>
-                            <option value="Male">Male</option>
-                            <option value="Non-binary">Non-binary</option>
-                            <option value="Prefer not to say">Prefer not to say</option>
-                          </select>
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          Age / Date of Birth
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.ageOrDob}
-                            onChange={handleChange('ageOrDob')}
-                            placeholder="e.g. 34 / 1990-08-12"
-                          />
-                        </label>
-                      </div>
-                      <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                        <h4 className="text-lg font-semibold invisible">placeholder</h4>
-                        <label className="block text-sm text-slate-800">
-                          Phone Number
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            type="tel"
-                            value={form.phone}
-                            onChange={handleChange('phone')}
-                            placeholder="+91 98765 43210"
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          Email ID
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            type="email"
-                            value={form.email}
-                            onChange={handleChange('email')}
-                            placeholder="client@example.com"
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          Address
-                          <textarea
-                            rows="3"
-                            className="mt-2 w-full rounded-[18px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 resize-none"
-                            value={form.address}
-                            onChange={handleChange('address')}
-                            placeholder="Client address"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 2 && (
-                    <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                      <h4 className="text-lg font-semibold">2. Health & Preference Details</h4>
-                      <label className="block text-sm text-slate-800">
-                        Skin type / allergies
-                        <input
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.skinType}
-                          onChange={handleChange('skinType')}
-                          placeholder="Example: sensitive, oily, nut allergy"
-                        />
-                      </label>
-                      <label className="block text-sm text-slate-800">
-                        Medical conditions (if any)
-                        <textarea
-                          rows="4"
-                          className="mt-2 w-full rounded-[18px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 resize-none"
-                          value={form.medicalConditions}
-                          onChange={handleChange('medicalConditions')}
-                          placeholder="Type medical conditions here"
-                        />
-                      </label>
-                      <label className="block text-sm text-slate-800">
-                        Preferred services
-                        <select
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.preferredService}
-                          onChange={handleChange('preferredService')}
-                        >
-                          {serviceGroups.map((group) => (
-                            <optgroup key={group.label} label={group.label}>
-                              {group.options.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  )}
-
-                  {step === 3 && (
-                    <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                      <h4 className="text-lg font-semibold">3. Appointment Details</h4>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <label className="block text-sm text-slate-800">
-                          Date of visit
-                          <input
-                            type="date"
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.appointmentDate || ''}
-                            onChange={handleChange('appointmentDate')}
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          Start Time
-                          <input
-                            type="time"
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.startTime || ''}
-                            onChange={handleChange('startTime')}
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          End Time
-                          <input
-                            type="time"
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.endTime || ''}
-                            onChange={handleChange('endTime')}
-                          />
-                        </label>
-                      </div>
-                      <label className="block text-sm text-slate-800">
-                        Selected service
-                        <select
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.selectedService}
-                          onChange={handleChange('selectedService')}
-                        >
-                          {serviceGroups.flatMap((group) => group.options).map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block text-sm text-slate-800">
-                        Assigned therapist
-                        <select
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.assignedTherapist}
-                          onChange={handleChange('assignedTherapist')}
-                        >
-                          {therapists.map((therapist) => (
-                            <option key={therapist.value} value={therapist.value}>
-                              {therapist.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block text-sm text-slate-800">
-                        Room assignment
-                        <select
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.assignedRoom}
-                          onChange={handleChange('assignedRoom')}
-                        >
-                          {rooms.map((room) => (
-                            <option key={room.value} value={room.value}>
-                              {room.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  )}
-
-                  {step === 4 && (
-                    <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                      <h4 className="text-lg font-semibold mb-4">4. Appointment & Payment</h4>
-                      <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-                        <h5 className="text-sm font-semibold text-slate-900 mb-4">Appointment Details</h5>
-                        <div className="text-sm space-y-3 text-slate-700">
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Client:</span>
-                            <span className="font-semibold">{appointmentSummary.clientName}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">ID:</span>
-                            <span className="font-semibold">{appointmentSummary.clientId}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Therapist:</span>
-                            <span className="font-semibold">{appointmentSummary.therapist}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Service:</span>
-                            <span className="font-semibold">{appointmentSummary.service}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Room:</span>
-                            <span className="font-semibold">{appointmentSummary.room}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Date:</span>
-                            <span className="font-semibold">{appointmentSummary.date}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Time:</span>
-                            <span className="font-semibold">{appointmentSummary.time}</span>
-                          </div>
-                          <div className="flex justify-between gap-4">
-                            <span className="text-slate-600">Amount:</span>
-                            <span className="font-semibold">₹{appointmentSummary.price}</span>
-                          </div>
-                        </div>
-                        <div className="mt-6 flex justify-center">
-                          <button
-                            type="button"
-                            className="rounded-full bg-blue-500 px-6 py-3 text-sm font-medium text-white transition hover:bg-blue-600"
-                            onClick={() => {
-                              setForm(prev => ({ ...prev, paymentMethod: 'Credit/Debit Card' }))
-                              setIsPaymentModalOpen(true)
-                            }}
-                          >
-                            Pay to Book Appointment
-                          </button>
+            <aside className="appointments-side">
+              <div className="upcoming-card">
+                <h4>Upcoming Today</h4>
+                <div className="upcoming-list">
+                  {dateFilteredUpcoming.map((item) => (
+                    <div className="upcoming-item" key={item.name}>
+                      <div className="upcoming-avatar">{item.name.charAt(0)}</div>
+                      <div>
+                        <p>{item.name}</p>
+                        <span>{item.service}</span>
+                        <div className="upcoming-meta">
+                          <span>{item.therapist}</span>
+                          <span>{item.time}</span>
                         </div>
                       </div>
+                      <span className={`upcoming-status ${item.status.toLowerCase()}`}>{item.status}</span>
                     </div>
-                  )}
+                  ))}
+                </div>
+              </div>
 
-                  {step === 5 && (
-                    <div className="space-y-5">
-                      <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                        <h4 className="text-lg font-semibold mb-4">5. Terms & Conditions</h4>
-                        <div className="space-y-4">
-                          <div className="bg-white rounded-lg p-4 border border-slate-200">
-                            <h5 className="font-semibold text-slate-800 mb-3">Terms & Conditions (Simple)</h5>
-                            <ul className="space-y-2 text-sm text-slate-600">
-                              <li className="flex items-start gap-2">
-                                <span className="text-emerald-600 mt-0.5">?</span>
-                                <span>I will arrive on time for my appointment.</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-emerald-600 mt-0.5">?</span>
-                                <span>I agree to make the payment before or after the service.</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-emerald-600 mt-0.5">?</span>
-                                <span>I can cancel or reschedule my appointment in advance.</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-emerald-600 mt-0.5">?</span>
-                                <span>I will inform any health issues or allergies before the service.</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-emerald-600 mt-0.5">?</span>
-                                <span>I understand that packages are non-refundable and have validity.</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-emerald-600 mt-0.5">?</span>
-                                <span>I am responsible for my personal belongings.</span>
-                              </li>
-                            </ul>
-                          </div>
-                          
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                            <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={form.termsAccepted}
-                                onChange={handleChange('termsAccepted')}
-                                className="mt-1 accent-primary w-4 h-4"
-                              />
-                              <span className="font-medium text-amber-800">
-                                ? I agree to the Terms & Conditions
-                                <span className="text-red-500 ml-1">*</span>
-                              </span>
-                            </label>
-                            <p className="text-xs text-amber-700 mt-2 ml-7">This checkbox is mandatory to proceed with booking.</p>
-                          </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-center">
-                          <button
-                            type="button"
-                            className="h-12 rounded-full bg-primary px-8 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-slate-300"
-                            disabled={!stepCompletion[5]}
-                            onClick={handleConfirmBooking}
-                          >
-                            Confirm Booking
-                          </button>
-                        </div>
+              <div className="occupancy-card">
+                <h4>Room Occupancy</h4>
+                {appointmentsData.room_occupancy.map((room) => (
+                  <div className="occupancy-row" key={room.name}>
+                    <div>
+                      <p>{room.name}</p>
+                      <div className="occupancy-bar">
+                        <span style={{ width: `${room.value}%` }}></span>
                       </div>
                     </div>
-                  )}
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </section>
+
+          <section className="availability-card">
+            <div className="availability-head">
+              <h4>Therapist Availability</h4>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setStatusMessage('Staff availability list opened.')}
+              >
+                View all staff
+              </button>
+            </div>
+            <div className="availability-list">
+              {appointmentsData.therapist_availability.map((therapist) => (
+                <div className="availability-item" key={therapist.name}>
+                  <div className="availability-avatar">{therapist.name.charAt(0)}</div>
+                  <div>
+                    <p>{therapist.name}</p>
+                    <span>{therapist.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : (
+        <section className="appointments-list-card">
+          <div className="appointments-list-head">
+            <div>
+              <h4>All Appointments</h4>
+              <p>{dateFilteredUpcoming.length} scheduled sessions</p>
+            </div>
+          </div>
+          <div className="appointments-list">
+            {dateFilteredUpcoming.length === 0 ? (
+              <p className="appointments-empty">No appointments found.</p>
+            ) : (
+              dateFilteredUpcoming.map((item) => (
+                <div className="appointment-row" key={`${item.name}-${item.time}`}>
+                  <div className="appointment-row-main">
+                    <div className="appointment-avatar">{item.name.charAt(0)}</div>
+                    <div>
+                      <p className="appointment-client">{item.name}</p>
+                      <span className="appointment-service">{item.service}</span>
+                    </div>
+                  </div>
+                  <div className="appointment-meta">
+                    <span>
+                      <MaterialSymbol name="calendar_month" className="text-[14px]" />
+                      {formatDisplayDate(item.date)}
+                    </span>
+                    <span>
+                      <MaterialSymbol name="schedule" className="text-[14px]" />
+                      {item.time}
+                    </span>
+                    <span>
+                      <MaterialSymbol name="medical_services" className="text-[14px]" />
+                      {item.therapist}
+                    </span>
+                  </div>
+                  <span className={`upcoming-status ${item.status.toLowerCase()}`}>
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+
+      {isAddOpen && (
+        <div className="appointment-modal-overlay">
+          <div className="appointment-modal">
+            <div className="appointment-modal-header">
+              <div>
+                <h3>New Appointment</h3>
+                <p>
+                  Expand your wellness schedule. Fill in the details below to register a new session.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="appointment-modal-close"
+                onClick={() => setIsAddOpen(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="appointment-modal-grid">
+              <section className="appointment-panel">
+                <h4>Session Details</h4>
+                <p>Select the client and service details for this therapeutic journey.</p>
+                <label>
+                  Client Name
+                  <div className="appointment-input">
+                    <input
+                      type="text"
+                      placeholder="Search for a registered client..."
+                      value={newAppointment.name}
+                      onChange={(event) => setNewAppointment({ ...newAppointment, name: event.target.value })}
+                    />
+                    <MaterialSymbol name="search" className="text-[16px]" />
+                  </div>
+                  <div className="appointment-tags">
+                    <span>Frequent: Julianne Moore</span>
+                    <span>Frequent: Arthur P.</span>
+                  </div>
+                </label>
+                <div className="appointment-therapists">
+                  <button
+                    type="button"
+                    className={newAppointment.therapist === 'Elena Vance' ? 'therapist-chip is-active' : 'therapist-chip'}
+                    onClick={() => setNewAppointment({ ...newAppointment, therapist: 'Elena Vance' })}
+                  >
+                    <span className="chip-avatar">E</span>
+                    <div>
+                      <strong>Elena Vance</strong>
+                      <span>Holistic Massage Expert</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    className={newAppointment.therapist === 'Marcus Thorn' ? 'therapist-chip is-active' : 'therapist-chip'}
+                    onClick={() => setNewAppointment({ ...newAppointment, therapist: 'Marcus Thorn' })}
+                  >
+                    <span className="chip-avatar">M</span>
+                    <div>
+                      <strong>Marcus Thorn</strong>
+                      <span>Cognitive Specialist</span>
+                    </div>
+                  </button>
+                </div>
+                <label>
+                  Service Selection
+                  <select
+                    value={newAppointment.service}
+                    onChange={(event) => setNewAppointment({ ...newAppointment, service: event.target.value })}
+                  >
+                    <option>Deep Tissue Renewal (90 min)</option>
+                    <option>Aromatherapy Ritual</option>
+                    <option>Hydrotherapy Reset</option>
+                  </select>
+                </label>
+                <div className="appointment-hero-card">
+                  <p>Member Exclusive</p>
+                  <h5>The Lavender Suite is currently available for priority bookings.</h5>
+                </div>
+              </section>
+
+              <section className="appointment-panel">
+                <h4>Time & Space</h4>
+                <p>Availability orchestration</p>
+                <div className="appointment-calendar">
+                  <div className="calendar-headline">
+                    <strong>October 2023</strong>
+                    <div className="calendar-nav">
+                      <button type="button" aria-label="Previous">
+                        <MaterialSymbol name="chevron_left" className="text-[16px]" />
+                      </button>
+                      <button type="button" aria-label="Next">
+                        <MaterialSymbol name="chevron_right" className="text-[16px]" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="appointment-calendar-grid">
+                    {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((label) => (
+                      <span key={label}>{label}</span>
+                    ))}
+                    {[25, 26, 27, 28, 29, 30, 1].map((day) => (
+                      <button type="button" key={`cal-${day}`}>{day}</button>
+                    ))}
+                    {[2, 3, 4, 5, 6, 7, 8].map((day) => (
+                      <button type="button" key={`cal-next-${day}`} className={day === 3 ? 'is-active' : ''}>
+                        {day}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-sm text-muted">
-                    {step < 4
-                      ? 'Complete the current step to continue.'
-                      : step === 4
-                      ? 'Select payment method to continue.'
-                      : 'Agree to terms to confirm booking.'}
-                  </div>
-                  <div className="flex items-center gap-3 justify-end">
-                    {step > 1 && (
+                <div className="appointment-slots">
+                  <p>Preferred Time Slot</p>
+                  <div>
+                    {appointmentsData.new_appointment.time_slots.map((slot) => (
                       <button
                         type="button"
-                        className="h-12 rounded-full border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                        onClick={handleStepBack}
+                        key={slot}
+                        className={newAppointment.time === slot ? 'is-active' : ''}
+                        onClick={() => setNewAppointment({ ...newAppointment, time: slot })}
                       >
-                        Back
+                        {slot}
                       </button>
-                    )}
+                    ))}
+                  </div>
+                </div>
+
+                <div className="appointment-rooms">
+                  <p>Room Selection</p>
+                  {appointmentsData.new_appointment.rooms.map((room) => (
                     <button
                       type="button"
-                      className="h-12 rounded-full bg-green-200 px-6 text-sm font-semibold text-green-800 transition hover:bg-green-300 disabled:cursor-not-allowed disabled:bg-gray-300"
-                      onClick={handleStepNext}
-                      disabled={!stepCompletion[step]}
+                      className={newAppointment.room === room.name ? 'room-option is-active' : 'room-option'}
+                      key={room.name}
+                      onClick={() => setNewAppointment({ ...newAppointment, room: room.name })}
                     >
-                      {step === 5 ? 'Confirm Booking' : 'Next'}
+                      <span>{room.name}</span>
+                      <span className={`badge ${room.status === 'Free' ? 'free' : 'busy'}`}>
+                        {room.status}
+                      </span>
                     </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isViewModalOpen && selectedAppointment && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Appointment Details</h3>
-              <button
-                type="button"
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => setIsViewModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Client:</span>
-                <span className="font-semibold">{selectedAppointment.clientName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">ID:</span>
-                <span className="font-semibold">{selectedAppointment.clientId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Therapist:</span>
-                <span className="font-semibold">{selectedAppointment.therapist}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service:</span>
-                <span className="font-semibold">{selectedAppointment.service}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Room:</span>
-                <span className="font-semibold">{selectedAppointment.room}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-semibold">{selectedAppointment.date}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Time:</span>
-                <span className="font-semibold">{selectedAppointment.time}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Transaction ID:</span>
-                <span className="font-semibold font-mono">{selectedAppointment.transactionId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
-                <span className={`font-semibold ${
-                  selectedAppointment.status === 'Confirmed' ? 'text-green-600' :
-                  selectedAppointment.status === 'Pending' ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>{selectedAppointment.status}</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="mt-6 w-full h-10 rounded-full bg-primary text-white font-semibold hover:brightness-110 transition"
-              onClick={() => setIsViewModalOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isEditFormModalOpen && (
-  <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-    <div className="w-full max-w-[920px] h-[calc(100vh-100px)] max-h-[860px] overflow-hidden rounded-[28px] bg-white shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-        <div>
-          <p className="text-[13px] uppercase tracking-[1.3px] text-muted">Edit Appointment</p>
-          <h3 className="text-[26px] font-semibold">Update Appointment Details</h3>
-        </div>
-        <button
-          type="button"
-          className="text-muted transition hover:text-ink"
-          onClick={() => setIsEditFormModalOpen(false)}
-          aria-label="Close form"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div className="flex h-full flex-col overflow-hidden px-6 py-5">
-        <div className="mb-5 grid gap-3 md:grid-cols-5">
-          {[
-            { id: 1, label: 'Client details' },
-            { id: 2, label: 'Health details' },
-            { id: 3, label: 'Appointment' },
-            { id: 4, label: 'Payment' },
-            { id: 5, label: 'Terms' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setStep(item.id)}
-              className={`rounded-2xl border px-3 py-3 text-left text-sm transition ${
-                step === item.id
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-slate-200 bg-slate-50 text-slate-700'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${
-                    stepCompletion[item.id]
-                      ? 'border-emerald-500 bg-emerald-100 text-emerald-700'
-                      : 'border-slate-300 bg-white text-slate-500'
-                  }`}
-                >
-                  {stepCompletion[item.id] ? '✓' : item.id}
-                </span>
-                <span className="font-medium">Step {item.id}</span>
-              </div>
-              <p className="mt-2 text-[11px] uppercase tracking-[1px] text-muted">{item.label}</p>
-            </button>
-          ))}
-        </div>
-
-        <form className="flex h-full flex-col overflow-hidden" onSubmit={handleStepNext}>
-          <div className="flex-1 overflow-y-auto pr-1">
-            {step === 1 && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                  <h4 className="text-lg font-semibold">1. Basic Client Details</h4>
-                  <label className="block text-sm text-slate-800">
-                    Full Name
-                    <input
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      value={form.fullName}
-                      onChange={handleChange('fullName')}
-                      placeholder="Enter full name"
-                    />
-                  </label>
-                  <label className="block text-sm text-slate-800">
-                    Gender
-                    <select
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      value={form.gender}
-                      onChange={handleChange('gender')}
-                    >
-                      <option value="">Select gender</option>
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Non-binary">Non-binary</option>
-                      <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm text-slate-800">
-                    Age / Date of Birth
-                    <input
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      value={form.ageOrDob}
-                      onChange={handleChange('ageOrDob')}
-                      placeholder="e.g. 34 / 1990-08-12"
-                    />
-                  </label>
-                </div>
-                <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                  <h4 className="text-lg font-semibold invisible">placeholder</h4>
-                  <label className="block text-sm text-slate-800">
-                    Phone Number
-                    <input
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      type="tel"
-                      value={form.phone}
-                      onChange={handleChange('phone')}
-                      placeholder="+91 98765 43210"
-                    />
-                  </label>
-                  <label className="block text-sm text-slate-800">
-                    Email ID
-                    <input
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange('email')}
-                      placeholder="client@example.com"
-                    />
-                  </label>
-                  <label className="block text-sm text-slate-800">
-                    Address
-                    <textarea
-                      rows="3"
-                      className="mt-2 w-full rounded-[18px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 resize-none"
-                      value={form.address}
-                      onChange={handleChange('address')}
-                      placeholder="Client address"
-                    />
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                <h4 className="text-lg font-semibold">2. Health & Preference Details</h4>
-                <label className="block text-sm text-slate-800">
-                  Skin type / allergies
-                  <input
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={form.skinType}
-                    onChange={handleChange('skinType')}
-                    placeholder="Example: sensitive, oily, nut allergy"
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Medical conditions (if any)
-                  <textarea
-                    rows="4"
-                    className="mt-2 w-full rounded-[18px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 resize-none"
-                    value={form.medicalConditions}
-                    onChange={handleChange('medicalConditions')}
-                    placeholder="Type medical conditions here"
-                  />
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Preferred services
-                  <select
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={form.preferredService}
-                    onChange={handleChange('preferredService')}
-                  >
-                    {serviceGroups.map((group) => (
-                      <optgroup key={group.label} label={group.label}>
-                        {group.options.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                <h4 className="text-lg font-semibold">3. Appointment Details</h4>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="block text-sm text-slate-800">
-                    Date of visit
-                    <input
-                      type="date"
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      value={form.appointmentDate || ''}
-                      onChange={handleChange('appointmentDate')}
-                    />
-                  </label>
-                  <label className="block text-sm text-slate-800">
-                    Time of visit
-                    <input
-                      type="time"
-                      className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                      value={form.appointmentTime || ''}
-                      onChange={handleChange('appointmentTime')}
-                    />
-                  </label>
-                </div>
-                <label className="block text-sm text-slate-800">
-                  Selected service
-                  <select
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={form.selectedService}
-                    onChange={handleChange('selectedService')}
-                  >
-                    {serviceGroups.flatMap((group) => group.options).map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Assigned therapist
-                  <select
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={form.assignedTherapist}
-                    onChange={handleChange('assignedTherapist')}
-                  >
-                    {therapists.map((therapist) => (
-                      <option key={therapist.value} value={therapist.value}>
-                        {therapist.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-sm text-slate-800">
-                  Room assignment
-                  <select
-                    className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                    value={form.assignedRoom}
-                    onChange={handleChange('assignedRoom')}
-                  >
-                    {rooms.map((room) => (
-                      <option key={room.value} value={room.value}>
-                        {room.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="space-y-5">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                  <h4 className="text-lg font-semibold mb-4">4. Payment Method</h4>
-                  <div className="space-y-4">
-                    <label className="flex items-center gap-3 text-sm text-slate-800">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="Credit/Debit Card"
-                        checked={form.paymentMethod === 'Credit/Debit Card'}
-                        onChange={handleChange('paymentMethod')}
-                        className="accent-primary"
-                      />
-                      Credit / Debit Card
-                    </label>
-                    <label className="flex items-center gap-3 text-sm text-slate-800">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="UPI"
-                        checked={form.paymentMethod === 'UPI'}
-                        onChange={handleChange('paymentMethod')}
-                        className="accent-primary"
-                      />
-                      UPI
-                    </label>
-                  </div>
-
-                  {form.paymentMethod === 'Credit/Debit Card' && (
-                    <div className="mt-5 space-y-4 rounded-[18px] border border-blue-200 bg-blue-50 p-4">
-                      <h5 className="text-sm font-semibold text-slate-800">Card Details</h5>
-                      <label className="block text-sm text-slate-800">
-                        Card Holder Name
-                        <input
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.cardHolderName}
-                          onChange={handleChange('cardHolderName')}
-                          placeholder="John Doe"
-                        />
-                      </label>
-                      <label className="block text-sm text-slate-800">
-                        Card Number
-                        <input
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.cardNumber}
-                          onChange={handleChange('cardNumber')}
-                          placeholder="4532 1234 5678 9010"
-                        />
-                      </label>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <label className="block text-sm text-slate-800">
-                          Expiry Date
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.expiryDate}
-                            onChange={handleChange('expiryDate')}
-                            placeholder="MM/YY"
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800">
-                          CVV
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.cvv}
-                            onChange={handleChange('cvv')}
-                            placeholder="123"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {form.paymentMethod === 'UPI' && (
-                    <div className="mt-5 space-y-4 rounded-[18px] border border-purple-200 bg-purple-50 p-4">
-                      <h5 className="text-sm font-semibold text-slate-800">UPI Details</h5>
-                      <div className="grid gap-4 md:grid-cols-2 items-start">
-                        <div>
-                          <label className="block text-sm text-slate-800">
-                            UPI ID
-                            <input
-                              className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                              value={form.upiId}
-                              onChange={handleChange('upiId')}
-                              placeholder="you@upi"
-                            />
-                          </label>
-                          <label className="block text-sm text-slate-800 mt-4">
-                            App Used
-                            <select
-                              className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                              value={form.upiApp}
-                              onChange={handleChange('upiApp')}
-                            >
-                              <option value="">Select UPI App</option>
-                              <option value="GPay">Google Pay (GPay)</option>
-                              <option value="PhonePe">PhonePe</option>
-                              <option value="Paytm">Paytm</option>
-                            </select>
-                          </label>
-                        </div>
-                        <div className="flex items-center justify-center">
-                          <div className="rounded-[12px] border border-slate-300 bg-white p-3">
-                            <img
-                              src="https://static.vecteezy.com/system/resources/previews/002/258/271/original/template-of-qr-code-ready-to-scan-with-smartphone-illustration-vector.jpg"
-                              alt="QR Code"
-                              className="h-32 w-32 object-cover"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {step === 5 && (
-              <div className="space-y-5">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                  <h4 className="text-lg font-semibold mb-4">5. Terms & Conditions</h4>
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4 border border-slate-200">
-                      <h5 className="font-semibold text-slate-800 mb-3">Terms & Conditions (Simple)</h5>
-                      <ul className="space-y-2 text-sm text-slate-600">
-                        <li className="flex items-start gap-2">
-                          <span className="text-emerald-600 mt-0.5">✓</span>
-                          <span>I will arrive on time for my appointment.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-emerald-600 mt-0.5">✓</span>
-                          <span>I agree to make the payment before or after the service.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-emerald-600 mt-0.5">✓</span>
-                          <span>I can cancel or reschedule my appointment in advance.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-emerald-600 mt-0.5">✓</span>
-                          <span>I will inform any health issues or allergies before the service.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-emerald-600 mt-0.5">✓</span>
-                          <span>I understand that packages are non-refundable and have validity.</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-emerald-600 mt-0.5">✓</span>
-                          <span>I am responsible for my personal belongings.</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.termsAccepted}
-                          onChange={handleChange('termsAccepted')}
-                          className="mt-1 accent-primary w-4 h-4"
-                        />
-                        <span className="font-medium text-amber-800">
-                          ✓ I agree to the Terms & Conditions
-                          <span className="text-red-500 ml-1">*</span>
-                        </span>
-                      </label>
-                      <p className="text-xs text-amber-700 mt-2 ml-7">This checkbox is mandatory to proceed with booking.</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-center">
-                    <button
-                      type="button"
-                      className="h-12 rounded-full bg-primary px-8 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-slate-300"
-                      disabled={!stepCompletion[5]}
-                      onClick={() => {
-                        setAppointments(appointments.map(apt => 
-                          apt.id === editingAppointment.id 
-                            ? {...apt, clientName: form.fullName, service: form.selectedService, therapist: form.assignedTherapist, room: form.assignedRoom}
-                            : apt
-                        ))
-                        setIsEditFormModalOpen(false)
-                        setStep(1)
-                        setForm(initialFormState)
-                      }}
-                    >
-                      Update Appointment
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted">
-              {step < 4
-                ? 'Complete the current step to continue.'
-                : step === 4
-                ? 'Select payment method to continue.'
-                : 'Agree to terms to confirm update.'}
-            </div>
-            <div className="flex items-center gap-3">
-              {step > 1 && (
-                <button
-                  type="button"
-                  className="h-12 rounded-full border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                  onClick={handleStepBack}
-                >
-                  Back
-                </button>
-              )}
-              {step < 5 && (
-                <button
-                  type="button"
-                  className="h-12 rounded-full border px-6 text-sm font-medium transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{borderColor: '#1f4d3e', color: '#1f4d3e'}}
-                  onClick={handleStepNext}
-                  disabled={!stepCompletion[step]}
-                >
-                  Next
-                </button>
-              )}
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-)}
-
-      {isPaymentModalOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Payment</h3>
-              <button
-                type="button"
-                className="text-gray-400 hover:text-gray-600"
-                onClick={() => setIsPaymentModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="mb-4 text-center">
-              <p className="text-lg font-semibold text-gray-900">Amount to Pay: ₹{appointmentSummary.price}</p>
-            </div>
-            <form onSubmit={handlePayment}>
-              <div className="space-y-4">
-                <div>
-                  <label className="flex items-center gap-3 text-sm text-slate-800">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="Credit/Debit Card"
-                      checked={form.paymentMethod === 'Credit/Debit Card'}
-                      onChange={handleChange('paymentMethod')}
-                      className="accent-primary"
-                    />
-                    Credit / Debit Card
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center gap-3 text-sm text-slate-800">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="UPI"
-                      checked={form.paymentMethod === 'UPI'}
-                      onChange={handleChange('paymentMethod')}
-                      className="accent-primary"
-                    />
-                    UPI
-                  </label>
+                  ))}
                 </div>
 
-                {form.paymentMethod === 'Credit/Debit Card' && (
-                  <div className="space-y-4 rounded-[18px] border border-blue-200 bg-blue-50 p-4">
-                    <h5 className="text-sm font-semibold text-slate-800">Card Details</h5>
-                    <label className="block text-sm text-slate-800">
-                      Card Holder Name
-                      <input
-                        className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                        value={form.cardHolderName}
-                        onChange={handleChange('cardHolderName')}
-                        placeholder="John Doe"
-                      />
-                    </label>
-                    <label className="block text-sm text-slate-800">
-                      Card Number
-                      <input
-                        className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                        value={form.cardNumber}
-                        onChange={handleChange('cardNumber')}
-                        placeholder="4532 1234 5678 9010"
-                      />
-                    </label>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <label className="block text-sm text-slate-800">
-                        Expiry Date
-                        <input
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.expiryDate}
-                          onChange={handleChange('expiryDate')}
-                          placeholder="MM/YY"
-                        />
-                      </label>
-                      <label className="block text-sm text-slate-800">
-                        CVV
-                        <input
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                          value={form.cvv}
-                          onChange={handleChange('cvv')}
-                          placeholder="123"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                {form.paymentMethod === 'UPI' && (
-                  <div className="space-y-4 rounded-[18px] border border-purple-200 bg-purple-50 p-4">
-                    <h5 className="text-sm font-semibold text-slate-800">UPI Details</h5>
-                    <div className="grid gap-4 md:grid-cols-2 items-start">
-                      <div>
-                        <label className="block text-sm text-slate-800">
-                          UPI ID
-                          <input
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.upiId}
-                            onChange={handleChange('upiId')}
-                            placeholder="you@upi"
-                          />
-                        </label>
-                        <label className="block text-sm text-slate-800 mt-4">
-                          App Used
-                          <select
-                            className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                            value={form.upiApp}
-                            onChange={handleChange('upiApp')}
-                          >
-                            <option value="">Select UPI App</option>
-                            <option value="GPay">Google Pay (GPay)</option>
-                            <option value="PhonePe">PhonePe</option>
-                            <option value="Paytm">Paytm</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div className="flex items-center justify-center">
-                        <div className="rounded-[12px] border border-slate-300 bg-white p-3">
-                          <img
-                            src="https://static.vecteezy.com/system/resources/previews/002/258/271/original/template-of-qr-code-ready-to-scan-with-smartphone-illustration-vector.jpg"
-                            alt="QR Code"
-                            className="h-32 w-32 object-cover"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-6 flex justify-center">
-                  <button
-                    type="submit"
-                    className="h-12 rounded-full bg-blue-500 px-8 text-sm font-semibold text-white transition hover:bg-blue-600"
-                  >
-                    Pay ₹{appointmentSummary.price}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {isEditModalOpen && editingAppointment && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-[920px] h-[calc(100vh-100px)] max-h-[860px] overflow-hidden rounded-[28px] bg-white shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-              <div>
-                <p className="text-[13px] uppercase tracking-[1.3px] text-muted">Edit Appointment</p>
-                <h3 className="text-[26px] font-semibold">Update Appointment Details</h3>
-              </div>
-              <button
-                type="button"
-                className="text-muted transition hover:text-ink"
-                onClick={() => setIsEditModalOpen(false)}
-                aria-label="Close form"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex h-full flex-col overflow-hidden px-6 py-5">
-              <form className="flex h-full flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-1">
-                  <div className="space-y-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-                    <h4 className="text-lg font-semibold">Appointment Information</h4>
-                    
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="block text-sm text-slate-800">Client Name</label>
-                        <input
-                          disabled
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                          value={editingAppointment.clientName}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-slate-800">Service</label>
-                        <input
-                          disabled
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                          value={editingAppointment.service}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="block text-sm text-slate-800">Date</label>
-                        <input
-                          disabled
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                          value={editingAppointment.date}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-slate-800">Time</label>
-                        <input
-                          disabled
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                          value={editingAppointment.time}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="block text-sm text-slate-800">Therapist</label>
-                        <input
-                          disabled
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                          value={editingAppointment.therapist}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-slate-800">Room</label>
-                        <input
-                          disabled
-                          className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                          value={editingAppointment.room}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-slate-800">Status</label>
-                      <select 
-                        className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900"
-                        defaultValue={editingAppointment.status}
-                        onChange={(e) => {
-                          setEditingAppointment({...editingAppointment, status: e.target.value})
-                        }}
+                <div className="appointment-status">
+                  <p>Status</p>
+                  <div>
+                    {appointmentsData.new_appointment.status_options.map((status) => (
+                      <button
+                        type="button"
+                        key={status}
+                        className={newAppointment.status === status ? 'is-active' : ''}
+                        onClick={() => setNewAppointment({ ...newAppointment, status })}
                       >
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Rejected">Rejected</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-slate-800">Transaction ID</label>
-                      <input
-                        disabled
-                        className="mt-2 h-11 w-full rounded-[18px] border border-slate-300 bg-gray-100 px-4 text-sm text-slate-900 cursor-not-allowed"
-                        value={editingAppointment.transactionId}
-                      />
-                    </div>
+                        {status}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-end">
-                  <button
-                    type="button"
-                    className="h-12 rounded-full border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                    onClick={() => setIsEditModalOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="h-12 rounded-full px-6 text-sm font-semibold text-white transition hover:brightness-110"
-                    style={{backgroundColor: '#1f4d3e'}}
-                    onClick={() => {
-                      setAppointments(appointments.map(apt => 
-                        apt.id === editingAppointment.id ? editingAppointment : apt
-                      ))
-                      setIsEditModalOpen(false)
-                    }}
-                  >
-                    Update Appointment
-                  </button>
+                {statusMessage && <p className="appointments-status">{statusMessage}</p>}
+                <button
+                  type="button"
+                  className="primary-button full-width"
+                  onClick={handleAddAppointment}
+                >
+                  Book Appointment
+                  <MaterialSymbol name="arrow_right_alt" className="text-[18px]" />
+                </button>
+
+                <div className="appointment-note">
+                  <MaterialSymbol name="info" className="text-[18px]" />
+                  Confirmed appointments will automatically trigger an SMS notification to the client.
                 </div>
-              </form>
+              </section>
             </div>
-          </div>
-        </div>
-      )}
-
-      {isPaymentSuccessOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-6 text-center shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-              ?
-            </div>
-            <h3 className="text-xl font-semibold text-emerald-700">Successfully Paid!</h3>
-            <div className="mt-4 space-y-2">
-              <p className="text-lg font-medium text-slate-800">Thank you, {customerName}!</p>
-              <div className="space-y-1">
-                <p className="text-sm text-slate-600">Service: <span className="font-semibold">{form.selectedService}</span></p>
-                <p className="text-sm text-slate-600">Transaction ID: <span className="font-mono font-semibold">{transactionId}</span></p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isSuccessOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md mx-4 rounded-[28px] bg-white p-6 text-center shadow-[0_28px_60px_rgba(31,77,62,0.18)]">
-            <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-              ?
-            </div>
-            <h3 className="text-xl md:text-2xl font-semibold text-emerald-700">Appointment booked successfully!</h3>
-            <div className="mt-4 space-y-2">
-              <p className="text-base md:text-lg font-medium text-emerald-700">Thank you, {customerName}!</p>
-              <p className="text-sm md:text-base text-slate-600">Your appointment has been confirmed</p>
-              <div className="mt-3 rounded-lg bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Transaction ID</p>
-                <p className="text-sm md:text-base font-mono font-semibold text-slate-800">{transactionId}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="mt-6 w-full inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-white hover:brightness-110 transition"
-              onClick={() => setIsSuccessOpen(false)}
-            >
-              Close
-            </button>
           </div>
         </div>
       )}
     </div>
   )
 }
-
-export default AppointmentsView
