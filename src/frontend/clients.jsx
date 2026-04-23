@@ -13,7 +13,6 @@ export default function ClientsView({
   onCloseNotifications,
 }) {
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTier, setSelectedTier] = useState('all')
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -48,29 +47,6 @@ export default function ClientsView({
     status: 'Active',
   })
 
-  const tierOptions = [
-    { id: 'all', label: 'All Clients' },
-    { id: 'diamond', label: 'Diamond' },
-    { id: 'gold', label: 'Gold' },
-    { id: 'silver', label: 'Silver' },
-  ]
-
-  const tierPalette = ['Diamond Elite', 'Gold Member', 'Silver Member']
-
-  const resolveTierLabel = (client, index) => {
-    if (client.membership) {
-      return client.membership
-    }
-    return tierPalette[index % tierPalette.length]
-  }
-
-  const resolveTierId = (label) => {
-    const normalized = String(label || '').toLowerCase()
-    if (normalized.includes('diamond')) return 'diamond'
-    if (normalized.includes('gold')) return 'gold'
-    if (normalized.includes('silver')) return 'silver'
-    return 'diamond'
-  }
 
   const formatDate = (value) => {
     if (!value) return '—'
@@ -83,21 +59,16 @@ export default function ClientsView({
     })
   }
 
-  const clientsWithMeta = clients.map((client, index) => {
-    const membership = resolveTierLabel(client, index)
-    const membershipKey = resolveTierId(membership)
+  const clientsWithMeta = clients.map((client) => {
     const latestVisit = client.appointmentHistory?.[0]
     const visitDate = client.last_visit_date || latestVisit?.date || client.created_at
     const lastVisitDate = formatDate(visitDate)
     const lastVisitService = latestVisit?.service || client.preferences || '—'
     return {
       ...client,
-      membership,
-      membershipKey,
       lastVisitDate,
       lastVisitService,
       visitDate,
-      listIndex: index,
     }
   })
 
@@ -107,7 +78,6 @@ export default function ClientsView({
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.phone.includes(searchTerm) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesTier = selectedTier === 'all' || client.membershipKey === selectedTier
     const normalizedStatus = (client.status || '').toLowerCase()
     const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter
     const ageValue = Number.parseInt(client.age, 10)
@@ -117,7 +87,7 @@ export default function ClientsView({
     const withinMin = minAgeValue === null || (hasValidAge && ageValue >= minAgeValue)
     const withinMax = maxAgeValue === null || (hasValidAge && ageValue <= maxAgeValue)
     const matchesAge = withinMin && withinMax
-    return matchesSearch && matchesTier && matchesStatus && matchesAge
+    return matchesSearch && matchesStatus && matchesAge
   })
 
   const dateFilteredClients = useMemo(
@@ -189,7 +159,6 @@ export default function ClientsView({
     try {
       const payload = {
         ...newClient,
-        membership: 'Diamond Elite',
         appointment_history: [],
         payment_history: [],
         created_at: new Date().toISOString().slice(0, 10),
@@ -288,21 +257,6 @@ export default function ClientsView({
       </header>
 
       <section className="clients-toolbar">
-        <div className="tier-group">
-          <p className="tier-label">Membership Tier</p>
-          <div className="tier-chips">
-            {tierOptions.map((tier) => (
-              <button
-                key={tier.id}
-                type="button"
-                className={`tier-chip${selectedTier === tier.id ? ' is-active' : ''}`}
-                onClick={() => setSelectedTier(tier.id)}
-              >
-                {tier.label}
-              </button>
-            ))}
-          </div>
-        </div>
         <div className="clients-actions">
           <button
             type="button"
@@ -373,66 +327,88 @@ export default function ClientsView({
 
       <section className="clients-card">
         {statusMessage && <p className="clients-status">{statusMessage}</p>}
-        <div className="clients-table-head">
-          <span>Client Name</span>
-          <span>Contact Info</span>
-          <span>Last Visit</span>
-          <span>Membership</span>
-          <span>Actions</span>
-        </div>
-        <div className="clients-table-body">
-          {dateFilteredClients.map((client) => (
-            <div className="clients-row" key={client.id}>
-              <div className="client-cell client-name-cell">
-                <div className="client-avatar">
-                  {client.name.charAt(0)}
+        <div className="clients-table">
+          <div className="clients-table-head">
+            <span>Client Name</span>
+            <span>Contact Info</span>
+            <span>Last Visit</span>
+            <span>Actions</span>
+          </div>
+          <div className="clients-table-body">
+            {dateFilteredClients.length === 0 ? (
+              <div className="clients-empty-row">
+                <span colSpan="4">No clients found.</span>
+              </div>
+            ) : (
+              dateFilteredClients.map((client) => (
+                <div className="clients-table-row" key={client.id}>
+                  <div className="clients-table-cell client-name-cell">
+                    <div className="client-avatar">
+                      {client.name.charAt(0)}
+                    </div>
+                    <div className="client-name-info">
+                      <p className="client-name">{client.name}</p>
+                      <p className="client-id">ID: MS-{String(client.id).padStart(4, '0')}</p>
+                    </div>
+                  </div>
+                  <div className="clients-table-cell contact-info-cell">
+                    <div className="contact-info">
+                      <p className="contact-item">
+                        <MaterialSymbol name="phone" className="text-[14px]" />
+                        {client.phone}
+                      </p>
+                      <p className="contact-item">
+                        <MaterialSymbol name="email" className="text-[14px]" />
+                        {client.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="clients-table-cell last-visit-cell">
+                    <div className="last-visit-info">
+                      <p className="visit-date">{client.lastVisitDate}</p>
+                      <p className="visit-service">{client.lastVisitService}</p>
+                    </div>
+                  </div>
+                  <div className="clients-table-cell actions-cell">
+                    <div className="client-actions">
+                      <span className={`client-status ${(client.status || '').toLowerCase()}`}>
+                        {client.status || 'Active'}
+                      </span>
+                      <div className="action-buttons">
+                        <button
+                          type="button"
+                          className="action-btn view-btn"
+                          aria-label={`View ${client.name}`}
+                          onClick={() => handleViewClient(client)}
+                          title="View client"
+                        >
+                          <MaterialSymbol name="visibility" className="text-[16px]" />
+                        </button>
+                        <button
+                          type="button"
+                          className="action-btn edit-btn"
+                          aria-label={`Edit ${client.name}`}
+                          onClick={() => handleEditClient(client)}
+                          title="Edit client"
+                        >
+                          <MaterialSymbol name="edit" className="text-[16px]" />
+                        </button>
+                        <button
+                          type="button"
+                          className="action-btn delete-btn"
+                          aria-label={`Delete ${client.name}`}
+                          onClick={() => handleDeleteClient(client)}
+                          title="Delete client"
+                        >
+                          <MaterialSymbol name="delete" className="text-[16px]" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="client-name">{client.name}</p>
-                  <p className="client-id">ID: MS-{String(client.id).padStart(4, '0')}</p>
-                </div>
-              </div>
-              <div className="client-cell">
-                <p className="client-main">{client.phone}</p>
-                <p className="client-sub">{client.email}</p>
-              </div>
-              <div className="client-cell">
-                <p className="client-main">{client.lastVisitDate}</p>
-                <p className="client-sub">{client.lastVisitService}</p>
-              </div>
-              <div className="client-cell">
-                <span className={`tier-badge ${client.membershipKey}`}>
-                  {client.membership}
-                </span>
-              </div>
-              <div className="client-cell client-actions">
-                <button
-                  type="button"
-                  className="clients-icon-button"
-                  aria-label={`View ${client.name}`}
-                  onClick={() => handleViewClient(client)}
-                >
-                  <MaterialSymbol name="visibility" className="text-[18px]" />
-                </button>
-                <button
-                  type="button"
-                  className="clients-icon-button"
-                  aria-label={`Edit ${client.name}`}
-                  onClick={() => handleEditClient(client)}
-                >
-                  <MaterialSymbol name="edit" className="text-[18px]" />
-                </button>
-                <button
-                  type="button"
-                  className="clients-icon-button danger"
-                  aria-label={`Delete ${client.name}`}
-                  onClick={() => handleDeleteClient(client)}
-                >
-                  <MaterialSymbol name="delete" className="text-[18px]" />
-                </button>
-              </div>
-            </div>
-          ))}
+              ))
+            )}
+          </div>
         </div>
         <div className="clients-footer">
           <p>
@@ -701,24 +677,7 @@ export default function ClientsView({
                 </section>
 
                 <section className="client-modal-section">
-                  <h4>Account Configuration</h4>
-                  <p className="client-modal-field">Membership Tier</p>
-                  <div className="tier-grid">
-                    {[
-                      { id: 'silver', label: 'Silver', note: 'Essential Serenity', icon: 'spa' },
-                      { id: 'gold', label: 'Gold', note: 'Elevated Wellness', icon: 'workspace_premium' },
-                      { id: 'platinum', label: 'Platinum', note: 'Absolute Luxury', icon: 'diamond' },
-                      { id: 'custom', label: 'Custom', note: 'Bespoke Rituals', icon: 'auto_awesome' },
-                    ].map((tier) => (
-                      <button key={tier.id} type="button" className="tier-card">
-                        <span className="tier-card-icon">
-                          <MaterialSymbol name={tier.icon} className="text-[18px]" />
-                        </span>
-                        <strong>{tier.label}</strong>
-                        <span>{tier.note}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <h4>Additional Information</h4>
                   <label className="client-modal-textarea">
                     Appointment Notes & Preferences
                     <textarea
