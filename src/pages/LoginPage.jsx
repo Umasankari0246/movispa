@@ -268,6 +268,11 @@ export default function LoginPage({ onSignIn }) {
                   </span>
                 ))}
               </div>
+              <div className="mt-4 rounded-2xl border border-primary/10 bg-primary/5 px-4 py-3">
+                <p className="text-[10px] uppercase tracking-[1px] text-muted mb-2">Demo Credentials</p>
+                <p className="text-[11px] text-heading font-medium">Email: <span className="font-mono">admin@spa.com</span></p>
+                <p className="text-[11px] text-heading font-medium">Password: <span className="font-mono">Admin123</span></p>
+              </div>
             </div>
           </div>
 

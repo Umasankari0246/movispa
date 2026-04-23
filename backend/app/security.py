@@ -1,18 +1,18 @@
 from datetime import datetime, timedelta
 from jose import jwt
-from passlib.context import CryptContext
+import bcrypt
 from .config import settings
 
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 def hash_secret(value: str) -> str:
-    return _pwd_context.hash(value)
+    return bcrypt.hashpw(value.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def verify_secret(value: str, hashed_value: str) -> bool:
-    return _pwd_context.verify(value, hashed_value)
+    try:
+        return bcrypt.checkpw(value.encode('utf-8'), hashed_value.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def create_access_token(subject: str) -> str:

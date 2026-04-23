@@ -18,7 +18,6 @@ import InsightsPage from './pages/InsightsPage.jsx'
 import AppointmentsPage from './pages/AppointmentsPage.jsx'
 import OffersPage from './pages/OffersPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
-import LoginPage from './pages/LoginPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 
 const NAV_SECTIONS = [
@@ -105,10 +104,7 @@ const VIEW_META = {
 }
 
 function App() {
-  const [view, setView] = useState(() => {
-    const token = window.localStorage.getItem('access_token')
-    return token ? 'dashboard' : 'login'
-  })
+  const [view, setView] = useState('dashboard')
   const [clients, setClients] = useState([])
 
   useEffect(() => {
@@ -123,10 +119,6 @@ function App() {
       })
       .catch(() => setClients([]))
   }, [])
-
-  if (view === 'login') {
-    return <LoginPage onSignIn={() => setView('dashboard')} />
-  }
 
   return (
     <div className="app-frame">
@@ -269,8 +261,7 @@ function AppShell({ view, onNav, clients, setClients }) {
               className="logout-button"
               aria-label="Log out"
               onClick={() => {
-                window.localStorage.removeItem('access_token')
-                onNav('login')
+                window.location.reload()
               }}
             >
               <MaterialSymbol name="logout" className="text-[16px]" />
