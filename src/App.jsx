@@ -108,16 +108,160 @@ function App() {
   const [clients, setClients] = useState([])
 
   useEffect(() => {
-    apiGet('/api/clients')
-      .then((data) => {
-        const normalized = (data || []).map((client) => ({
-          ...client,
-          appointmentHistory: client.appointmentHistory || client.appointment_history || [],
-          paymentHistory: client.paymentHistory || client.payment_history || [],
-        }))
-        setClients(normalized)
-      })
-      .catch(() => setClients([]))
+    // Use exact same client data as appointment page list view
+    const loadClientsFromStorage = () => {
+      try {
+        const stored = localStorage.getItem('appointmentsData')
+        if (stored) {
+          const parsedData = JSON.parse(stored)
+          // Use the exact same upcoming_today data as appointment page
+          const appointmentClients = parsedData.upcoming_today || []
+          
+          // If no clients in storage, use the exact same default data as appointment page
+          if (appointmentClients.length === 0) {
+            return [
+              {
+                id: 1,
+                name: 'Elena Gilbert',
+                email: 'elena.gilbert@email.com',
+                phone: '+1 234-567-8901',
+                address: '123 Spa Street, Wellness City',
+                age: '28',
+                preferences: 'Deep Tissue Massage',
+                status: 'Active',
+                created_at: '2024-01-15',
+                last_visit_date: '2024-03-20',
+                appointmentHistory: [
+                  { date: '2024-03-20', service: 'Deep Tissue Massage', status: 'Completed' }
+                ],
+                paymentHistory: [
+                  { date: '2024-03-20', amount: '150', status: 'Paid' }
+                ]
+              },
+              {
+                id: 2,
+                name: 'Marcus Vane',
+                email: 'marcus.vane@email.com',
+                phone: '+1 234-567-8902',
+                address: '456 Relax Avenue, Serenity Town',
+                age: '35',
+                preferences: 'Facial Cleansing',
+                status: 'Upcoming',
+                created_at: '2024-02-10',
+                last_visit_date: '2024-03-18',
+                appointmentHistory: [
+                  { date: '2024-03-18', service: 'Facial Cleansing', status: 'Completed' }
+                ],
+                paymentHistory: [
+                  { date: '2024-03-18', amount: '120', status: 'Paid' }
+                ]
+              },
+              {
+                id: 3,
+                name: 'Sarah Koenig',
+                email: 'sarah.koenig@email.com',
+                phone: '+1 234-567-8903',
+                address: '789 Wellness Boulevard, Peace City',
+                age: '42',
+                preferences: 'Full Body Detox',
+                status: 'Upcoming',
+                created_at: '2024-01-25',
+                last_visit_date: '2024-03-22',
+                appointmentHistory: [
+                  { date: '2024-03-22', service: 'Full Body Detox', status: 'Completed' }
+                ],
+                paymentHistory: [
+                  { date: '2024-03-22', amount: '180', status: 'Paid' }
+                ]
+              }
+            ]
+          }
+          
+          // Convert appointment data to client format
+          return appointmentClients.map((appointment, index) => ({
+            id: index + 1,
+            name: appointment.name,
+            email: `${appointment.name.toLowerCase().replace(' ', '.')}@email.com`,
+            phone: `+1 234-567-890${index + 1}`,
+            address: `${index + 1}23 Spa Street, Wellness City`,
+            age: '28',
+            preferences: appointment.service || 'General Wellness',
+            status: appointment.status || 'Active',
+            created_at: '2024-01-15',
+            last_visit_date: appointment.date || new Date().toISOString().split('T')[0],
+            appointmentHistory: [
+              { date: appointment.date || new Date().toISOString().split('T')[0], service: appointment.service || 'Wellness Service', status: 'Completed' }
+            ],
+            paymentHistory: [
+              { date: appointment.date || new Date().toISOString().split('T')[0], amount: '150', status: 'Paid' }
+            ]
+          }))
+        }
+      } catch (error) {
+        console.error('Error loading clients from storage:', error)
+      }
+      
+      // Fallback to exact same default clients as appointment page
+      return [
+        {
+          id: 1,
+          name: 'Elena Gilbert',
+          email: 'elena.gilbert@email.com',
+          phone: '+1 234-567-8901',
+          address: '123 Spa Street, Wellness City',
+          age: '28',
+          preferences: 'Deep Tissue Massage',
+          status: 'Active',
+          created_at: '2024-01-15',
+          last_visit_date: '2024-03-20',
+          appointmentHistory: [
+            { date: '2024-03-20', service: 'Deep Tissue Massage', status: 'Completed' }
+          ],
+          paymentHistory: [
+            { date: '2024-03-20', amount: '150', status: 'Paid' }
+          ]
+        },
+        {
+          id: 2,
+          name: 'Marcus Vane',
+          email: 'marcus.vane@email.com',
+          phone: '+1 234-567-8902',
+          address: '456 Relax Avenue, Serenity Town',
+          age: '35',
+          preferences: 'Facial Cleansing',
+          status: 'Upcoming',
+          created_at: '2024-02-10',
+          last_visit_date: '2024-03-18',
+          appointmentHistory: [
+            { date: '2024-03-18', service: 'Facial Cleansing', status: 'Completed' }
+          ],
+          paymentHistory: [
+            { date: '2024-03-18', amount: '120', status: 'Paid' }
+          ]
+        },
+        {
+          id: 3,
+          name: 'Sarah Koenig',
+          email: 'sarah.koenig@email.com',
+          phone: '+1 234-567-8903',
+          address: '789 Wellness Boulevard, Peace City',
+          age: '42',
+          preferences: 'Full Body Detox',
+          status: 'Upcoming',
+          created_at: '2024-01-25',
+          last_visit_date: '2024-03-22',
+          appointmentHistory: [
+            { date: '2024-03-22', service: 'Full Body Detox', status: 'Completed' }
+          ],
+          paymentHistory: [
+            { date: '2024-03-22', amount: '180', status: 'Paid' }
+          ]
+        }
+      ]
+    }
+
+    const clientsData = loadClientsFromStorage()
+    setClients(clientsData)
   }, [])
 
   return (
