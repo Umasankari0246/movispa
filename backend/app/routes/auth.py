@@ -5,11 +5,14 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from ..config import settings
-from ..db import get_db
+from ..db import get_db, is_db_connected
 from ..security import create_access_token, hash_secret, verify_secret
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# In-memory store for captchas when DB is unavailable
+_memory_captchas = {}
 
 
 class CaptchaResponse(BaseModel):
@@ -83,14 +86,19 @@ def create_captcha():
     answer = _build_captcha_text()
     image_data = _build_captcha_svg(answer)
     captcha_id = str(uuid4())
-    db = get_db()
-    db.captchas.insert_one(
-        {
-            "_id": captcha_id,
-            "answer_hash": hash_secret(answer),
-            "created_at": datetime.utcnow(),
-        }
-    )
+    
+    captcha_doc = {
+        "_id": captcha_id,
+        "answer_hash": hash_secret(answer),
+        "created_at": datetime.utcnow(),
+    }
+
+    if is_db_connected():
+        db = get_db()
+        db.captchas.insert_one(captcha_doc)
+    else:
+        _memory_captchas[captcha_id] = captcha_doc
+
     return CaptchaResponse(
         captcha_id=captcha_id,
         image_data=image_data,
@@ -100,20 +108,41 @@ def create_captcha():
 
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest):
-    db = get_db()
-    captcha = db.captchas.find_one({"_id": payload.captcha_id})
+    captcha = None
+    if is_db_connected():
+        db = get_db()
+        captcha = db.captchas.find_one({"_id": payload.captcha_id})
+        if captcha:
+            db.captchas.delete_one({"_id": payload.captcha_id})
+    else:
+        captcha = _memory_captchas.pop(payload.captcha_id, None)
+
     if not captcha:
-        raise HTTPException(status_code=400, detail="Invalid captcha.")
+        raise HTTPException(status_code=400, detail="Invalid or expired captcha.")
 
     captcha_valid = verify_secret(
         payload.captcha_answer.strip(),
         captcha.get("answer_hash", ""),
     )
-    db.captchas.delete_one({"_id": payload.captcha_id})
+    
     if not captcha_valid:
-        raise HTTPException(status_code=400, detail="Invalid captcha.")
+        raise HTTPException(status_code=400, detail="Invalid captcha answer.")
 
-    user = db.users.find_one({"email": _normalize_email(payload.email)})
+    email = _normalize_email(payload.email)
+    user = None
+    
+    if is_db_connected():
+        db = get_db()
+        user = db.users.find_one({"email": email})
+    else:
+        # Mock admin login if DB is down
+        admin_email = settings.admin_email.strip().lower()
+        if email == admin_email:
+            user = {
+                "email": admin_email,
+                "password_hash": hash_secret(settings.admin_password),
+            }
+
     password_hash = user.get("password_hash", "") if user else ""
     if not user or not verify_secret(payload.password, password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
