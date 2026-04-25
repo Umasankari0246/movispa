@@ -1455,12 +1455,6 @@ export default function AnalyticsPage({ onToggleNotifications, onCloseNotificati
 
       )}
 
-    </div>
-
-  )
-
-)}
-
       {/* Customer Lifecycle Analytics */}
       <section className="analytics-card analytics-lifecycle">
         <div className="analytics-lifecycle-head">
