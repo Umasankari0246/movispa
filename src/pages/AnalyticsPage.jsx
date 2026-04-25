@@ -1090,7 +1090,7 @@ export default function AnalyticsPage({ onToggleNotifications, onCloseNotificati
 
                 <div className="popular-stats">
 
-                  <strong>{item.value}</strong>
+                  <strong>{item.value || '0%'}</strong>
 
                   <span className="revenue-amount">${(item.bookings * 150).toLocaleString()}</span>
 
