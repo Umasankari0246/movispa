@@ -247,11 +247,11 @@ export default function TherapistManagement() {
   const onLeave = therapists.filter(t => t.status === 'On Leave').length
 
   return (
-    <div className="view-body" style={{ fontFamily: 'Inter, sans-serif', transform: 'scale(0.9)', transformOrigin: 'top left', width: '111.11%', height: '111.11%' }}>
+    <div className="view-body">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-[18px] font-bold text-[#1f1a16] mb-2" style={{ fontFamily: 'Playfair Display, serif', letterSpacing: '0.6px' }}>Expert Therapists</h1>
-        <p className="text-[10px] text-[#9a9186]" style={{ lineHeight: '1.7', letterSpacing: '0.3px' }}>Guided by intuition, grounded in expertise</p>
+        <h1 className="text-[24px] text-[#1f1a16] mb-2" style={{ fontFamily: 'var(--serif)' }}>Expert Therapists</h1>
+        <p className="text-[10px] text-[#9a9186]">Guided by intuition, grounded in expertise</p>
       </div>
 
       {/* Summary Cards */}
@@ -259,8 +259,8 @@ export default function TherapistManagement() {
         <div className="bg-white rounded-[24px] p-6" style={{ boxShadow: '0 12px 22px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] text-[#9a9186] mb-1 uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Total Therapists</p>
-              <p className="text-[11px] font-bold text-[#1f1a16]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>{totalTherapists}</p>
+              <p className="text-[9px] text-[#9a9186] mb-1 uppercase tracking-[1px]">Total Therapists</p>
+              <p className="text-[11px] font-bold text-[#1f1a16] uppercase tracking-[1px]">{totalTherapists}</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-[#1f4d3e]/10 flex items-center justify-center">
               <MaterialSymbol name="people" className="text-[#1f4d3e] text-xl" />
@@ -271,8 +271,8 @@ export default function TherapistManagement() {
         <div className="bg-white rounded-[24px] p-6" style={{ boxShadow: '0 12px 22px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] text-[#9a9186] mb-1 uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Available Today</p>
-              <p className="text-[11px] font-bold text-[#1f1a16]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>{availableToday}</p>
+              <p className="text-[9px] text-[#9a9186] mb-1 uppercase tracking-[1px]">Available Today</p>
+              <p className="text-[11px] font-bold text-[#1f1a16] uppercase tracking-[1px]">{availableToday}</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-[#dcefe6] flex items-center justify-center">
               <MaterialSymbol name="check_circle" className="text-[#2f7d6d] text-xl" />
@@ -283,8 +283,8 @@ export default function TherapistManagement() {
         <div className="bg-white rounded-[24px] p-6" style={{ boxShadow: '0 12px 22px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] text-[#9a9186] mb-1 uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>On Leave</p>
-              <p className="text-[11px] font-bold text-[#1f1a16]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>{onLeave}</p>
+              <p className="text-[9px] text-[#9a9186] mb-1 uppercase tracking-[1px]">On Leave</p>
+              <p className="text-[11px] font-bold text-[#1f1a16] uppercase tracking-[1px]">{onLeave}</p>
             </div>
             <div className="w-12 h-12 rounded-full bg-[#f5d9a1] flex items-center justify-center">
               <MaterialSymbol name="event_busy" className="text-[#f0b429] text-xl" />
@@ -303,13 +303,11 @@ export default function TherapistManagement() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 rounded-[18px] border border-[#eee6db] bg-white text-[#3d3a36] text-[12px] focus:outline-none focus:ring-2 focus:ring-[#1f4d3e]/20"
-            style={{ boxShadow: '0 12px 22px rgba(0,0,0,0.06)', fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
           />
         </div>
         <button
           onClick={() => setIsAddOpen(true)}
           className="px-6 py-3 rounded-full bg-gradient-to-r from-[#1f4d3e] to-[#2f7d6d] text-white font-medium flex items-center gap-2 transition-all duration-300 text-[10px] uppercase tracking-[1.2px]"
-          style={{ boxShadow: '0 30px 60px rgba(31,77,62,0.18)', fontFamily: 'Inter, sans-serif' }}
         >
           <MaterialSymbol name="add" className="text-xl" />
           Add New Therapist
@@ -328,7 +326,6 @@ export default function TherapistManagement() {
                   ? 'text-[#1f4d3e] border-b-2 border-[#1f4d3e]'
                   : 'text-[#9a9186] hover:text-[#2f2a24]'
               }`}
-              style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '1px' }}
             >
               {tab}
             </button>
@@ -342,9 +339,9 @@ export default function TherapistManagement() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left: Therapist List */}
               <div>
-                <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-4" style={{ fontFamily: 'Playfair Display, serif' }}>Therapists</h3>
-                <p className="text-[9px] text-[#9a9186] mb-4" style={{ lineHeight: '1.6', letterSpacing: '1px', textTransform: 'uppercase' }}>Available team</p>
-                <p className="text-[9px] text-[#9a9186] mb-4" style={{ lineHeight: '1.6', letterSpacing: '1px', textTransform: 'uppercase' }}>Showing {filteredTherapists.length} of {therapists.length}</p>
+                <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-4" style={{ fontFamily: 'var(--serif)' }}>Therapists</h3>
+                <p className="text-[9px] text-[#9a9186] mb-4 uppercase tracking-[1px]">Available team</p>
+                <p className="text-[9px] text-[#9a9186] mb-4 uppercase tracking-[1px]">Showing {filteredTherapists.length} of {therapists.length}</p>
                 
                 <div className="space-y-3">
                   {filteredTherapists.map((therapist) => (
@@ -362,8 +359,8 @@ export default function TherapistManagement() {
                           {getInitials(therapist.name)}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold text-[#2f2a24] text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>{therapist.name}</h4>
-                          <p className="text-[9px] text-[#9a9186]" style={{ lineHeight: '1.6', letterSpacing: '0.3px' }}>{therapist.specialization}</p>
+                          <h4 className="font-semibold text-[#2f2a24] text-[11px]">{therapist.name}</h4>
+                          <p className="text-[9px] text-[#9a9186]">{therapist.specialization}</p>
                         </div>
                         <div className={`w-2 h-2 rounded-full ${
                           therapist.status === 'Available' ? 'bg-[#2f7d6d]' : 'bg-[#f0b429]'
@@ -378,7 +375,7 @@ export default function TherapistManagement() {
               <div>
                 <div className="bg-white rounded-[24px] border border-[#1f4d3e]/15 p-6" style={{ boxShadow: '0 12px 22px rgba(0,0,0,0.06)' }}>
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'Playfair Display, serif' }}>Therapist Details</h3>
+                    <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'var(--serif)' }}>Therapist Details</h3>
                     {isEditingDetails ? (
                       <div className="flex gap-2">
                         <button
@@ -387,14 +384,12 @@ export default function TherapistManagement() {
                             setEditedTherapist(null)
                           }}
                           className="px-3 py-2 rounded-full border border-[#eee6db] text-[#9a9186] hover:text-[#2f2a24] text-[9px] uppercase tracking-[1px]"
-                          style={{ fontFamily: 'Inter, sans-serif' }}
                         >
                           Cancel
                         </button>
                         <button
                           onClick={handleUpdateTherapist}
                           className="px-3 py-2 rounded-full bg-[#1f4d3e] text-white text-[9px] uppercase tracking-[1.2px]"
-                          style={{ fontFamily: 'Inter, sans-serif' }}
                         >
                           Save
                         </button>
@@ -406,7 +401,6 @@ export default function TherapistManagement() {
                           setIsEditingDetails(true)
                         }}
                         className="px-3 py-2 rounded-full bg-[#1f4d3e] text-white text-[10px] uppercase tracking-[1.2px]"
-                        style={{ fontFamily: 'Inter, sans-serif' }}
                       >
                         Edit Details
                       </button>
@@ -420,92 +414,87 @@ export default function TherapistManagement() {
                           {getInitials(selectedTherapist.name)}
                         </div>
                         <div>
-                          <h4 className="text-[16px] font-semibold text-[#2f2a24]" style={{ fontFamily: 'Playfair Display, serif' }}>{selectedTherapist.name}</h4>
-                          <p className="text-[9px] text-[#9a9186]" style={{ lineHeight: '1.7', letterSpacing: '0.3px' }}>{selectedTherapist.specialization}</p>
+                          <h4 className="text-[16px] font-semibold text-[#2f2a24]" style={{ fontFamily: 'var(--serif)' }}>{selectedTherapist.name}</h4>
+                          <p className="text-[9px] text-[#9a9186]">{selectedTherapist.specialization}</p>
                         </div>
                       </div>
 
                       {isEditingDetails ? (
                         <div className="space-y-4">
                           <label className="block">
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Full Name</span>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Full Name</span>
                             <input
                               type="text"
                               value={editedTherapist?.name || ''}
                               onChange={(e) => setEditedTherapist({...editedTherapist, name: e.target.value})}
                               className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
-                              style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                             />
                           </label>
                           <label className="block">
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Phone Number</span>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Phone Number</span>
                             <input
                               type="text"
                               value={editedTherapist?.phone || ''}
                               onChange={(e) => setEditedTherapist({...editedTherapist, phone: e.target.value})}
                               className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
-                              style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                             />
                           </label>
                           <label className="block">
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Email Address</span>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Email Address</span>
                             <input
                               type="email"
                               value={editedTherapist?.email || ''}
                               onChange={(e) => setEditedTherapist({...editedTherapist, email: e.target.value})}
                               className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
-                              style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                             />
                           </label>
                           <label className="block">
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Specialization</span>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Specialization</span>
                             <input
                               type="text"
                               value={editedTherapist?.specialization || ''}
                               onChange={(e) => setEditedTherapist({...editedTherapist, specialization: e.target.value})}
-                              className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
-                              style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
+                              className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white"
                             />
                           </label>
                           <label className="block">
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Experience</span>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Experience</span>
                             <input
                               type="text"
                               value={editedTherapist?.experience || ''}
                               onChange={(e) => setEditedTherapist({...editedTherapist, experience: e.target.value})}
-                              className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
-                              style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
+                              className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white"
                             />
                           </label>
                         </div>
                       ) : (
                         <div className="space-y-3">
                           <div>
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[0.6px]" style={{ letterSpacing: '0.6px' }}>Full Name</span>
-                            <p className="font-medium text-[#1f1a16] text-[12px]" style={{ fontFamily: 'Inter, sans-serif' }}>{selectedTherapist.name}</p>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Full Name</span>
+                            <p className="font-medium text-[#1f1a16] text-[12px]">{selectedTherapist.name}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[0.6px]" style={{ letterSpacing: '0.6px' }}>Phone Number</span>
-                            <p className="font-medium text-[#1f1a16] text-[12px]" style={{ fontFamily: 'Inter, sans-serif' }}>{selectedTherapist.phone}</p>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Phone Number</span>
+                            <p className="font-medium text-[#1f1a16] text-[12px]">{selectedTherapist.phone}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[0.6px]" style={{ letterSpacing: '0.6px' }}>Email Address</span>
-                            <p className="font-medium text-[#1f1a16] text-[12px]" style={{ fontFamily: 'Inter, sans-serif' }}>{selectedTherapist.email}</p>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Email Address</span>
+                            <p className="font-medium text-[#1f1a16] text-[12px]">{selectedTherapist.email}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[0.6px]" style={{ letterSpacing: '0.6px' }}>Specialization</span>
-                            <p className="font-medium text-[#1f1a16] text-[12px]" style={{ fontFamily: 'Inter, sans-serif' }}>{selectedTherapist.specialization}</p>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Specialization</span>
+                            <p className="font-medium text-[#1f1a16] text-[12px]">{selectedTherapist.specialization}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[0.6px]" style={{ letterSpacing: '0.6px' }}>Experience</span>
-                            <p className="font-medium text-[#1f1a16] text-[12px]" style={{ fontFamily: 'Inter, sans-serif' }}>{selectedTherapist.experience}</p>
+                            <span className="text-[9px] text-[#9a9186] uppercase tracking-[1px]">Experience</span>
+                            <p className="font-medium text-[#1f1a16] text-[12px]">{selectedTherapist.experience}</p>
                           </div>
                         </div>
                       )}
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-[#9a9186] text-[10px]" style={{ lineHeight: '1.7', letterSpacing: '0.3px' }}>Selected profile and summary data appear here.</p>
+                      <p className="text-[#9a9186] text-[10px]">Selected profile and summary data appear here.</p>
                     </div>
                   )}
                 </div>
@@ -518,10 +507,10 @@ export default function TherapistManagement() {
             <div>
               {isEditingAvailability ? (
                 <div>
-                  <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>Edit Availability</h3>
+                  <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-6" style={{ fontFamily: 'var(--serif)' }}>Edit Availability</h3>
                   <div className="space-y-6">
                     <div>
-                      <label className="text-[10px] text-[#9a9186] mb-3 block" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Working Days</label>
+                      <label className="text-[10px] text-[#9a9186] mb-3 block uppercase tracking-[1px]">Working Days</label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
                           <label key={day} className="flex items-center gap-2 cursor-pointer">
@@ -558,7 +547,7 @@ export default function TherapistManagement() {
                     {!availabilityForm.useDefaultHours && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] text-[#9a9186] mb-2" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Start Time</label>
+                          <label className="block text-[10px] text-[#9a9186] mb-2 uppercase tracking-[1px]">Start Time</label>
                           <input
                             type="time"
                             value={availabilityForm.startTime}
@@ -567,7 +556,7 @@ export default function TherapistManagement() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-[#9a9186] mb-2" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>End Time</label>
+                          <label className="block text-[10px] text-[#9a9186] mb-2 uppercase tracking-[1px]">End Time</label>
                           <input
                             type="time"
                             value={availabilityForm.endTime}
@@ -600,7 +589,7 @@ export default function TherapistManagement() {
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'Playfair Display, serif' }}>Availability</h3>
+                    <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'var(--serif)' }}>Availability</h3>
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -616,25 +605,25 @@ export default function TherapistManagement() {
                   
                   <div className="space-y-4">
                     <div>
-                      <span className="text-[10px] text-[#9a9186]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Working Days</span>
+                      <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Working Days</span>
                       <p className="font-medium text-[#1f1a16] text-[12px]">
                         {selectedTherapist.availability?.workingDays?.join(', ') || 'Not set'}
                       </p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-[#9a9186]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Start Time</span>
+                      <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Start Time</span>
                       <p className="font-medium text-[#1f1a16] text-[12px]">
                         {selectedTherapist.availability?.startTime || 'Not set'}
                       </p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-[#9a9186]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>End Time</span>
+                      <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">End Time</span>
                       <p className="font-medium text-[#1f1a16] text-[12px]">
                         {selectedTherapist.availability?.endTime || 'Not set'}
                       </p>
                     </div>
                     <div>
-                      <span className="text-[10px] text-[#9a9186]" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Leave Dates</span>
+                      <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Leave Dates</span>
                       <p className="font-medium text-[#1f1a16] text-[12px]">
                         {selectedTherapist.availability?.leaveDates?.length > 0 
                           ? selectedTherapist.availability.leaveDates.join(', ')
@@ -653,7 +642,7 @@ export default function TherapistManagement() {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50" style={{ backgroundColor: 'rgba(15, 20, 18, 0.45)' }}>
               <div className="bg-white rounded-[24px] p-6 max-w-md w-full" style={{ boxShadow: '0 30px 60px rgba(31,77,62,0.18)' }}>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'Playfair Display, serif' }}>Manage Leave Dates</h3>
+                  <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'var(--serif)' }}>Manage Leave Dates</h3>
                   <button
                     onClick={() => setIsLeaveMode(false)}
                     className="w-8 h-8 rounded-full bg-[#1f4d3e]/10 flex items-center justify-center hover:bg-[#1f4d3e]/20"
@@ -663,7 +652,7 @@ export default function TherapistManagement() {
                 </div>
 
                 <div className="mb-6">
-                  <p className="text-[10px] text-[#9a9186] mb-4" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Select Leave Dates</p>
+                  <p className="text-[10px] text-[#9a9186] mb-4 uppercase tracking-[1px]">Select Leave Dates</p>
                   <input
                     type="date"
                     multiple
@@ -672,12 +661,11 @@ export default function TherapistManagement() {
                       setSelectedLeaveDates(dates)
                     }}
                     className="w-full p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
-                    style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                   />
                 </div>
 
                 <div className="mb-6">
-                  <p className="text-[10px] text-[#9a9186] mb-2" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>Selected Leave Dates</p>
+                  <p className="text-[10px] text-[#9a9186] mb-2 uppercase tracking-[1px]">Selected Leave Dates</p>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {selectedLeaveDates.length > 0 ? (
                       selectedLeaveDates.map((date, index) => (
@@ -704,7 +692,6 @@ export default function TherapistManagement() {
                   <button
                     onClick={() => setIsLeaveMode(false)}
                     className="flex-1 px-6 py-3 rounded-full border border-[#1f4d3e]/15 text-[#9a9186] hover:text-[#2f2a24] text-[10px] uppercase tracking-[1px]"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     Cancel
                   </button>
@@ -726,7 +713,6 @@ export default function TherapistManagement() {
                       }
                     }}
                     className="flex-1 px-6 py-3 rounded-full bg-[#1f4d3e] text-white text-[10px] uppercase tracking-[1.2px]"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     Save Leave Dates
                   </button>
@@ -740,7 +726,7 @@ export default function TherapistManagement() {
             <div>
               {isEditingServices ? (
                 <div>
-                  <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>Edit Services</h3>
+                  <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-6" style={{ fontFamily: 'var(--serif)' }}>Edit Services</h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 mb-4">
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -802,7 +788,7 @@ export default function TherapistManagement() {
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'Playfair Display, serif' }}>Services</h3>
+                    <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'var(--serif)' }}>Services</h3>
                     <button
                       onClick={() => {
                         setSelectedServices(selectedTherapist.services || [])
@@ -835,15 +821,15 @@ export default function TherapistManagement() {
           {/* Appointments Tab */}
           {activeTab === 'appointments' && (
             <div>
-              <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>Assigned Appointments</h3>
+              <h3 className="text-[16px] font-semibold text-[#1f1a16] mb-6" style={{ fontFamily: 'var(--serif)' }}>Assigned Appointments</h3>
               
               {selectedTherapist ? (
                 <div className="space-y-4">
                   <div className="mb-6">
-                    <p className="text-[10px] text-[#9a9186] mb-2" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    <p className="text-[10px] text-[#9a9186] mb-2 uppercase tracking-[1px]">
                       {selectedTherapist.name}'s Appointments
                     </p>
-                    <p className="text-[9px] text-[#9a9186]" style={{ lineHeight: '1.6', letterSpacing: '0.3px' }}>
+                    <p className="text-[9px] text-[#9a9186]">
                       Total: {SAMPLE_APPOINTMENTS.filter(apt => apt.therapistId === selectedTherapist.id).length} appointments
                     </p>
                   </div>
@@ -914,7 +900,7 @@ export default function TherapistManagement() {
         <div className={`fixed bottom-6 right-6 px-6 py-3 rounded-[24px] ${
           statusMessage.includes('success') ? 'bg-[#2f7d6d] text-white' : 'bg-[#b05b49] text-white'
         }`} style={{ boxShadow: '0 12px 22px rgba(0,0,0,0.06)' }}>
-          <span className="text-[11px]" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}>{statusMessage}</span>
+          <span className="text-[11px]">{statusMessage}</span>
         </div>
       )}
 
@@ -923,7 +909,7 @@ export default function TherapistManagement() {
         <div className="fixed inset-0 flex items-center justify-center p-6 z-50">
           <div className="bg-white rounded-[24px] p-6 max-w-md w-full" style={{ boxShadow: '0 30px 60px rgba(31,77,62,0.18)' }}>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'Playfair Display, serif' }}>New therapist admission</h3>
+              <h3 className="text-[16px] font-semibold text-[#1f1a16]" style={{ fontFamily: 'var(--serif)' }}>New therapist admission</h3>
               <button
                 onClick={() => setIsAddOpen(false)}
                 className="w-8 h-8 rounded-full bg-[#1f4d3e]/10 flex items-center justify-center hover:bg-[#1f4d3e]/20"
@@ -937,62 +923,57 @@ export default function TherapistManagement() {
               handleAddTherapist(); 
             }} className="space-y-4">
               <label className="block">
-                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Full Name</span>
+                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Full Name</span>
                 <input
                   type="text"
                   value={newTherapist.name}
                   onChange={(e) => setNewTherapist({...newTherapist, name: e.target.value})}
                   className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
                   required
-                  style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                 />
               </label>
 
               <label className="block">
-                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Phone Number</span>
+                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Phone Number</span>
                 <input
                   type="text"
                   value={newTherapist.phone}
                   onChange={(e) => setNewTherapist({...newTherapist, phone: e.target.value})}
                   className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
                   required
-                  style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                 />
               </label>
 
               <label className="block">
-                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Email Address</span>
+                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Email Address</span>
                 <input
                   type="email"
                   value={newTherapist.email}
                   onChange={(e) => setNewTherapist({...newTherapist, email: e.target.value})}
                   className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
                   required
-                  style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                 />
               </label>
 
               <label className="block">
-                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Specialization</span>
+                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Specialization</span>
                 <input
                   type="text"
                   value={newTherapist.specialization}
                   onChange={(e) => setNewTherapist({...newTherapist, specialization: e.target.value})}
                   className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
                   required
-                  style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                 />
               </label>
 
               <label className="block">
-                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]" style={{ letterSpacing: '1px' }}>Experience</span>
+                <span className="text-[10px] text-[#9a9186] uppercase tracking-[1px]">Experience</span>
                 <input
                   type="text"
                   value={newTherapist.experience}
                   onChange={(e) => setNewTherapist({...newTherapist, experience: e.target.value})}
                   className="w-full mt-1 p-3 rounded-[18px] border border-[#eee6db] bg-white text-[12px]"
                   required
-                  style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '0.3px' }}
                 />
               </label>
 
@@ -1001,7 +982,6 @@ export default function TherapistManagement() {
                   type="button"
                   onClick={() => setIsAddOpen(false)}
                   className="flex-1 px-6 py-3 rounded-full border border-[#1f4d3e]/15 text-[#9a9186] hover:text-[#2f2a24] text-[10px] uppercase tracking-[1px]"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   Cancel
                 </button>
@@ -1009,7 +989,6 @@ export default function TherapistManagement() {
                   type="submit"
                   disabled={isSubmitting}
                   className={`flex-1 px-6 py-3 rounded-full text-white text-[10px] uppercase tracking-[1.2px] ${isSubmitting ? 'bg-[#8a9c90] cursor-not-allowed' : 'bg-[#1f4d3e]'}`}
-                  style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   {isSubmitting ? 'Saving...' : 'Submit'}
                 </button>
