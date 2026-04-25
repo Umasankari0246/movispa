@@ -17,6 +17,18 @@ const DEFAULT_LIFECYCLE = [
   14, 46, 28, 66, 48, 58, 29, 27, 59, 31, 72, 52, 22,
 ]
 
+const LIFECYCLE_DATA = {
+  weekly: [
+    14, 46, 28, 66, 48, 58, 29, 27, 59, 31, 72, 52, 22,
+  ],
+  monthly: [
+    22, 58, 35, 72, 54, 65, 38, 42, 68, 45, 78, 62, 35,
+  ],
+  yearly: [
+    31, 65, 48, 78, 62, 72, 45, 55, 75, 58, 82, 68, 48,
+  ]
+}
+
 const POPULAR_TREATMENT_ICONS = {
   'Stone Therapy': 'spa',
   'Deep Tissue': 'back_hand',
@@ -32,6 +44,15 @@ export default function AnalyticsPage({ onToggleNotifications, onCloseNotificati
   const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear())
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  
+  // Enhanced analytics state
+  const [dateFilter, setDateFilter] = useState('today')
+  const [bookingTrendView, setBookingTrendView] = useState('monthly')
+  const [lifecycleView, setLifecycleView] = useState('weekly')
+  const [selectedTreatment, setSelectedTreatment] = useState(null)
+  const [showTreatmentModal, setShowTreatmentModal] = useState(false)
+  const [comprehensiveAnalytics, setComprehensiveAnalytics] = useState(null)
+  const [strategyApplied, setStrategyApplied] = useState(false)
   const [analytics, setAnalytics] = useState({
     revenue: 142850,
     retention_rate: 84.2,
